@@ -1,0 +1,4 @@
+src/
+tsconfig.json
+WEBFORMS_EXTENSION_ARCHITECTURE.md
+*.ts

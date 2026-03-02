@@ -1,0 +1,114 @@
+{
+  "name": "vscodefor08",
+  "displayName": "WebForms Helper for VS2008",
+  "description": "Navigation-first helper for legacy ASP.NET WebForms / WebSite projects.",
+  "version": "0.0.1",
+  "publisher": "bnggbn",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:webformsHelper.goToCodeBehind",
+    "onCommand:webformsHelper.goToMarkup",
+    "onCommand:webformsHelper.goToDesigner",
+    "onCommand:webformsHelper.refreshRelationships",
+    "onView:webformsHelper.relatedFiles"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "webformsHelper.goToCodeBehind",
+        "title": "WebForms: Go to Code Behind"
+      },
+      {
+        "command": "webformsHelper.goToMarkup",
+        "title": "WebForms: Go to Markup"
+      },
+      {
+        "command": "webformsHelper.goToDesigner",
+        "title": "WebForms: Go to Designer"
+      },
+      {
+        "command": "webformsHelper.refreshRelationships",
+        "title": "WebForms: Refresh Relationships"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "id": "webformsHelper.relatedFiles",
+          "name": "WebForms Related Files"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "WebForms Helper",
+      "properties": {
+        "webformsHelper.enableCodeLens": {
+          "type": "boolean",
+          "default": true
+        },
+        "webformsHelper.enableDiagnostics": {
+          "type": "boolean",
+          "default": true
+        },
+        "webformsHelper.includeGlobs": {
+          "type": "array",
+          "default": [
+            "**/*.{aspx,ascx,master,ashx,asmx}",
+            "**/*.cs"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "webformsHelper.excludeGlobs": {
+          "type": "array",
+          "default": [
+            "**/bin/**",
+            "**/obj/**",
+            "**/node_modules/**",
+            "**/tools/_intellisense/**"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "webformsHelper.rules.missingCodeFile": {
+          "type": "string",
+          "default": "warning"
+        },
+        "webformsHelper.rules.missingDesigner": {
+          "type": "string",
+          "default": "information"
+        },
+        "webformsHelper.rules.missingInherits": {
+          "type": "string",
+          "default": "warning"
+        },
+        "webformsHelper.rules.cs0103LikelyWebFormsFalsePositive": {
+          "type": "string",
+          "default": "information"
+        },
+        "webformsHelper.diagnostics.maxControlGuidanceItems": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -watch -p ."
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.0",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4"
+  }
+}
