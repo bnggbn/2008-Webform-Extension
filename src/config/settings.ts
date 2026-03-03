@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { DEFAULT_INCLUDE_GLOBS, toGlobPattern } from '../utils/globUtils';
 
 export type RuleLevel = 'error' | 'warning' | 'information' | 'hint' | 'off';
+export type CompatibilityProfile = 'vs2005' | 'vs2008' | 'vs2010' | 'vs2012' | 'vs2013' | 'vs2015' | 'custom';
 
 export type WebFormsSettings = {
   enableCodeLens: boolean;
@@ -10,14 +11,17 @@ export type WebFormsSettings = {
   excludeGlobs: string[];
   includeGlobsPattern: string;
   excludeGlobsPattern: string;
+  compatibility: {
+    profile: CompatibilityProfile;
+    csharpLanguageVersion: string;
+  };
   rules: {
     missingCodeFile: RuleLevel;
     missingDesigner: RuleLevel;
     missingInherits: RuleLevel;
-    cs0103LikelyWebFormsFalsePositive: RuleLevel;
-  };
-  diagnostics: {
-    maxControlGuidanceItems: number;
+    unsupportedStringInterpolation: RuleLevel;
+    unsupportedNameofExpression: RuleLevel;
+    unsupportedNullConditionalAccess: RuleLevel;
   };
 };
 
@@ -37,14 +41,17 @@ export function loadSettings(): WebFormsSettings {
     excludeGlobs,
     includeGlobsPattern: toGlobPattern(config.get<string[]>('includeGlobs', DEFAULT_INCLUDE_GLOBS)),
     excludeGlobsPattern: `{${excludeGlobs.join(',')}}`,
+    compatibility: {
+      profile: config.get<CompatibilityProfile>('compatibility.profile', 'vs2008'),
+      csharpLanguageVersion: config.get<string>('compatibility.csharpLanguageVersion', ''),
+    },
     rules: {
       missingCodeFile: config.get<RuleLevel>('rules.missingCodeFile', 'warning'),
       missingDesigner: config.get<RuleLevel>('rules.missingDesigner', 'information'),
       missingInherits: config.get<RuleLevel>('rules.missingInherits', 'warning'),
-      cs0103LikelyWebFormsFalsePositive: config.get<RuleLevel>('rules.cs0103LikelyWebFormsFalsePositive', 'information'),
-    },
-    diagnostics: {
-      maxControlGuidanceItems: config.get<number>('diagnostics.maxControlGuidanceItems', 5),
+      unsupportedStringInterpolation: config.get<RuleLevel>('rules.unsupportedStringInterpolation', 'error'),
+      unsupportedNameofExpression: config.get<RuleLevel>('rules.unsupportedNameofExpression', 'error'),
+      unsupportedNullConditionalAccess: config.get<RuleLevel>('rules.unsupportedNullConditionalAccess', 'error'),
     },
   };
 }

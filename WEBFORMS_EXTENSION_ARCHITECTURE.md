@@ -18,14 +18,14 @@ This extension is for developers maintaining legacy:
 Primary value:
 
 - connect `.aspx` / `.ascx` / `.master` / `.ashx` / `.asmx` files to their code-behind and designer files
-- provide guidance where generic C# tooling produces false positives
 - add rule-based WebForms diagnostics without implementing a full compiler
+- flag legacy C# syntax compatibility issues that modern Roslyn setups may not surface for old environments
 
 ## Goals
 
 - Navigation-first support for WebForms files
 - Lightweight diagnostics for common WebForms structural issues
-- WebForms-aware suppression guidance for likely false positives from generic C# tooling
+- Legacy compatibility diagnostics for older Visual Studio / C# language targets
 - JSON-configurable rules so real-world legacy cases can be added incrementally
 - Safe coexistence with `C# (Microsoft)`
 
@@ -54,10 +54,10 @@ Long term, the extension may reduce dependence on `C# (Microsoft)`, but that is 
 
 1. `.aspx` and `.aspx.cs` are not linked in VS Code.
 2. `.designer.cs` fields are not understood in WebForms-aware ways.
-3. Generic C# diagnostics can report false positives such as:
-   - `CS0103`: control field not found
-   - `CS0101`: duplicate type due to WebSite model quirks
-   - `CS0246`: unresolved type caused by legacy website structure or missing generated context
+3. Some newer C# syntax can compile or parse in the editor even though it is invalid for the target legacy environment.
+   - `$"..."` string interpolation in VS2008 / C# 3.0 projects
+   - `nameof(...)` in pre-C# 6 projects
+   - `?.` / `?[]` null-conditional access in pre-C# 6 projects
 4. Legacy Website projects lack clear project structure in editor workflows.
 
 ## MVP Scope
@@ -90,13 +90,13 @@ Initial rules:
 - missing `CodeFile` target
 - missing `Inherits`
 - missing `.designer.cs`
-- `Inherits` mismatch between markup and designer/code-behind
-- likely false-positive `CS0103` when a server control ID or designer field exists
+- unsupported string interpolation for legacy profiles
+- unsupported `nameof(...)` for legacy profiles
+- unsupported null-conditional access for legacy profiles
 
 ### Views
 
 - `WebForms Relationships` tree view
-- `WebForms Problems` tree view
 
 ## Architectural Overview
 
@@ -183,8 +183,8 @@ This layer should only consume `WebFormEntry` data and should not perform raw pa
 Responsibilities:
 
 - run rule-based checks against resolved entries
+- run compatibility checks against C# source files
 - publish diagnostics under its own diagnostic collection
-- classify likely false positives from generic C# tooling
 
 Important constraint:
 
@@ -193,8 +193,8 @@ Important constraint:
 Instead it should produce:
 
 - its own diagnostics
-- explanatory messages
-- optional suppression guidance in a dedicated view
+- structural diagnostics for WebForms relationships
+- compatibility diagnostics for legacy language targets
 
 ### 6. Configuration / Rules Engine
 
@@ -223,11 +223,23 @@ src/
     relatedFilesTree.ts
   diagnostics/
     diagnosticEngine.ts
-    rules/
-      missingCodeFileRule.ts
-      missingDesignerRule.ts
-      missingInheritsRule.ts
-      cs0103FalsePositiveRule.ts
+    structural/
+      createStructuralRules.ts
+      rules/
+        missingCodeFileRule.ts
+        missingDesignerRule.ts
+        missingInheritsRule.ts
+        rule.ts
+    compatibility/
+      createCompatibilityRules.ts
+      compatibilityCore.ts
+      compatibilityRuleUtils.ts
+      compatibilitySyntaxFinders.ts
+      rules/
+        stringInterpolationCompatibilityRule.ts
+        nameofCompatibilityRule.ts
+        nullConditionalCompatibilityRule.ts
+        rule.ts
   config/
     settings.ts
     ruleConfig.ts
@@ -261,19 +273,16 @@ Example:
     "**/node_modules/**",
     "**/tools/_intellisense/**"
   ],
-  "webformsHelper.codeBehindFields": [
-    "CodeFile",
-    "CodeBehind"
-  ],
+  "webformsHelper.compatibility.profile": "vs2008",
+  "webformsHelper.compatibility.csharpLanguageVersion": "",
   "webformsHelper.rules": {
     "missingCodeFile": "warning",
     "missingDesigner": "information",
     "missingInherits": "warning",
-    "inheritsMismatch": "warning",
-    "cs0103LikelyWebFormsFalsePositive": "information"
-  },
-  "webformsHelper.pathAliases": {},
-  "webformsHelper.knownPatterns": []
+    "unsupportedStringInterpolation": "error",
+    "unsupportedNameofExpression": "error",
+    "unsupportedNullConditionalAccess": "error"
+  }
 }
 ```
 
@@ -299,23 +308,21 @@ Examples:
 - designer file missing
 - invalid `Inherits` mapping
 
-### B. False-Positive Guidance
+### B. Compatibility Diagnostics
 
-These are not true compiler diagnostics.
-They are explanations layered on top of known generic-C# limitations.
+These are extension-owned diagnostics for syntax that is valid in newer C# versions but not in the configured legacy target.
 
 Examples:
 
-- `CS0103` on a WebForms control field that exists in markup/designer
-- duplicate partial type errors caused by Website compilation model
+- `$"..."` string interpolation when the profile is `vs2008`
+- `nameof(...)` when the configured language version is below C# 6
+- `?.` / `?[]` when the configured language version is below C# 6
 
 Suggested representation:
 
-- publish as `Information` diagnostics
-- also show in `WebForms Problems`
-- add quick action text like:
-  - `Likely WebForms false positive`
-  - `Check designer mapping`
+- publish under this extension's own diagnostic source
+- severity controlled by settings
+- evaluate independently from Roslyn's own compiler diagnostics
 
 ## Initial Rule Design
 
@@ -339,21 +346,26 @@ Triggers when:
 
 - markup directive lacks `Inherits`
 
-### `inheritsMismatch`
+### `unsupportedStringInterpolation`
 
 Triggers when:
 
-- `Inherits` does not align with code-behind/designer class naming patterns
+- configured compatibility profile does not support C# 6
+- source file contains `$"..."` string interpolation
 
-### `cs0103LikelyWebFormsFalsePositive`
+### `unsupportedNameofExpression`
 
 Triggers when:
 
-- current file is `*.aspx.cs`, `*.ascx.cs`, or similar
-- a matching markup/designer relationship exists
-- a referenced identifier appears to be a server control ID or designer field candidate
+- configured compatibility profile does not support C# 6
+- source file contains `nameof(...)`
 
-In v1, this can be heuristic only.
+### `unsupportedNullConditionalAccess`
+
+Triggers when:
+
+- configured compatibility profile does not support C# 6
+- source file contains `?.` or `?[]`
 
 ## Interaction with `C# (Microsoft)`
 
@@ -381,6 +393,7 @@ If future integration is needed, build an adapter layer rather than hardcoding a
 - relationship resolution
 - path resolution
 - rule evaluation
+- compatibility syntax detection
 
 ### Fixture Tests
 
@@ -415,22 +428,21 @@ Use real legacy samples:
 
 ### Milestone 3
 
-- false-positive guidance rules
+- compatibility diagnostics
 - JSON-configurable rule severities
-- `WebForms Problems` panel
 
 ### Milestone 4
 
 - incremental caching
 - more heuristic rules from real user cases
-- optional suppression guidance UX
+- more legacy syntax compatibility rules
 
 ## Suggested README Positioning for the Extension Repo
 
 Short version:
 
 > VS Code helper for legacy ASP.NET WebForms / WebSite projects.
-> Adds markup-to-code-behind navigation, designer awareness, and lightweight diagnostics without replacing the standard C# extension.
+> Adds markup-to-code-behind navigation, designer awareness, and lightweight structural / compatibility diagnostics without replacing the standard C# extension.
 
 ## Final Guidance
 
@@ -440,7 +452,7 @@ That keeps scope controlled while still solving the most painful real-world gaps
 
 - missing navigation
 - missing relationship awareness
-- noisy false positives
+- missing legacy compatibility checks
 - weak support for legacy WebForms structures
 
 If this foundation proves useful, diagnostics and deeper IntelliSense-like behaviors can be added gradually through rules and heuristics driven by real projects.

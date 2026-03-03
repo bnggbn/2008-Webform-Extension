@@ -10,6 +10,7 @@ export class WorkspaceScanner {
   private readonly byMarkup = new Map<string, WebFormEntry>();
   private readonly byCodeBehind = new Map<string, WebFormEntry>();
   private readonly byDesigner = new Map<string, WebFormEntry>();
+  private readonly knownCodeFiles = new Set<string>();
 
   constructor(private readonly settings: WebFormsSettings) {}
 
@@ -17,11 +18,15 @@ export class WorkspaceScanner {
     this.byMarkup.clear();
     this.byCodeBehind.clear();
     this.byDesigner.clear();
+    this.knownCodeFiles.clear();
 
     for (const folder of vscode.workspace.workspaceFolders || []) {
       const files = await this.collectFiles(folder);
 
       for (const filePath of files) {
+        if (isRelevantCodeFile(filePath)) {
+          this.knownCodeFiles.add(filePath);
+        }
         const entry = this.buildEntry(filePath);
         if (entry) {
           this.indexEntry(entry);
@@ -31,6 +36,7 @@ export class WorkspaceScanner {
   }
 
   refreshFile(filePath: string): void {
+    this.trackCodeFile(filePath, true);
     const impacted = this.collectImpactedPaths(filePath);
     for (const impactedPath of impacted) {
       this.removeIndexesForPath(impactedPath);
@@ -60,6 +66,7 @@ export class WorkspaceScanner {
   }
 
   removeFile(filePath: string): void {
+    this.trackCodeFile(filePath, false);
     const impacted = this.collectImpactedPaths(filePath);
     for (const impactedPath of impacted) {
       this.removeIndexesForPath(impactedPath);
@@ -89,8 +96,19 @@ export class WorkspaceScanner {
     return Array.from(this.byMarkup.values());
   }
 
+  getAllCodeFilePaths(): string[] {
+    return Array.from(this.knownCodeFiles.values());
+  }
+
+  getImpactedPaths(filePath: string): string[] {
+    return this.collectImpactedPaths(filePath);
+  }
+
   private buildEntry(filePath: string): WebFormEntry | undefined {
     if (isMarkupFile(filePath)) {
+      if (!fs.existsSync(filePath)) {
+        return undefined;
+      }
       const markup = fs.readFileSync(filePath, 'utf8');
       const directive = parseDirectiveInfo(markup, filePath);
       const entry = resolveWebFormEntry(filePath, directive);
@@ -186,5 +204,18 @@ export class WorkspaceScanner {
     if (entry.designerPath) {
       this.byDesigner.delete(entry.designerPath.toLowerCase());
     }
+  }
+
+  private trackCodeFile(filePath: string, present: boolean): void {
+    if (!isRelevantCodeFile(filePath) || this.shouldSkipCodeFile(filePath)) {
+      return;
+    }
+
+    if (present) {
+      this.knownCodeFiles.add(filePath);
+      return;
+    }
+
+    this.knownCodeFiles.delete(filePath);
   }
 }

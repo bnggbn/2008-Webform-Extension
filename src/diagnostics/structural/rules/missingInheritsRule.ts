@@ -1,15 +1,15 @@
 import * as vscode from 'vscode';
-import { WebFormsSettings } from '../../config/settings';
-import { toSeverity } from '../../config/ruleConfig';
-import { RuleContext, WebFormsRule } from './rule';
+import { WebFormsSettings } from '../../../config/settings';
+import { toSeverity } from '../../../config/ruleConfig';
+import { RuleContext, RuleDiagnostic, StructuralRule } from './rule';
 
-export class MissingInheritsRule implements WebFormsRule {
+export class MissingInheritsRule implements StructuralRule {
   readonly id = 'missingInherits';
   readonly category = 'webforms' as const;
 
   constructor(private readonly settings: WebFormsSettings) {}
 
-  evaluate(context: RuleContext): vscode.Diagnostic[] {
+  evaluate(context: RuleContext): RuleDiagnostic[] {
     const { entry } = context;
     if (entry.inherits) {
       return [];
@@ -21,6 +21,6 @@ export class MissingInheritsRule implements WebFormsRule {
       toSeverity(this.settings.rules.missingInherits)
     );
     diagnostic.source = 'webformsHelper';
-    return [diagnostic];
+    return [{ path: entry.markupPath, diagnostic }];
   }
 }

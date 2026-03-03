@@ -12,22 +12,22 @@ export class FileWatcher implements vscode.Disposable {
     private readonly treeProvider: RelatedFilesTreeProvider
   ) {
     this.watcher = vscode.workspace.createFileSystemWatcher('**/*');
-    const refreshAllViews = () => {
-      this.diagnostics.refreshAll();
-      this.treeProvider.refresh();
-    };
 
     this.watcher.onDidChange(uri => {
       this.scanner.refreshFile(uri.fsPath);
-      refreshAllViews();
+      this.diagnostics.refreshFile(uri.fsPath);
+      this.treeProvider.refresh();
     });
     this.watcher.onDidCreate(uri => {
       this.scanner.refreshFile(uri.fsPath);
-      refreshAllViews();
+      this.diagnostics.refreshFile(uri.fsPath);
+      this.treeProvider.refresh();
     });
     this.watcher.onDidDelete(uri => {
+      const impactedPaths = this.scanner.getImpactedPaths(uri.fsPath);
       this.scanner.removeFile(uri.fsPath);
-      refreshAllViews();
+      this.diagnostics.removeFile(uri.fsPath, impactedPaths);
+      this.treeProvider.refresh();
     });
   }
 

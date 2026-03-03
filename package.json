@@ -78,6 +78,25 @@
             "type": "string"
           }
         },
+        "webformsHelper.compatibility.profile": {
+          "type": "string",
+          "enum": [
+            "vs2005",
+            "vs2008",
+            "vs2010",
+            "vs2012",
+            "vs2013",
+            "vs2015",
+            "custom"
+          ],
+          "default": "vs2008",
+          "description": "Legacy compatibility profile used by syntax rules."
+        },
+        "webformsHelper.compatibility.csharpLanguageVersion": {
+          "type": "string",
+          "default": "",
+          "description": "Used when compatibility.profile is custom. Examples: 3.0, 4.0, 6.0."
+        },
         "webformsHelper.rules.missingCodeFile": {
           "type": "string",
           "default": "warning"
@@ -90,21 +109,25 @@
           "type": "string",
           "default": "warning"
         },
-        "webformsHelper.rules.cs0103LikelyWebFormsFalsePositive": {
+        "webformsHelper.rules.unsupportedStringInterpolation": {
           "type": "string",
-          "default": "information"
+          "default": "error"
         },
-        "webformsHelper.diagnostics.maxControlGuidanceItems": {
-          "type": "number",
-          "default": 5,
-          "minimum": 1
+        "webformsHelper.rules.unsupportedNameofExpression": {
+          "type": "string",
+          "default": "error"
+        },
+        "webformsHelper.rules.unsupportedNullConditionalAccess": {
+          "type": "string",
+          "default": "error"
         }
       }
     }
   },
   "scripts": {
     "build": "tsc -p .",
-    "watch": "tsc -watch -p ."
+    "watch": "tsc -watch -p .",
+    "test": "npm run build && node --test test/**/*.test.js"
   },
   "devDependencies": {
     "@types/node": "^20.17.0",
