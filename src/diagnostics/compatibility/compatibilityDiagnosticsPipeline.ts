@@ -67,6 +67,13 @@ export class CompatibilityDiagnosticsPipeline {
   }
 
   private tryReadFile(path: string): string | undefined {
+    const openDocument = vscode.workspace.textDocuments.find(document =>
+      document.uri.scheme === 'file' && document.fileName.toLowerCase() === path.toLowerCase()
+    );
+    if (openDocument) {
+      return openDocument.getText();
+    }
+
     try {
       return fs.readFileSync(path, 'utf8');
     } catch {

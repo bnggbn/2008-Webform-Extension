@@ -11,6 +11,9 @@
     "Other"
   ],
   "activationEvents": [
+    "onStartupFinished",
+    "onLanguage:csharp",
+    "onLanguage:html",
     "onCommand:webformsHelper.goToCodeBehind",
     "onCommand:webformsHelper.goToMarkup",
     "onCommand:webformsHelper.goToDesigner",

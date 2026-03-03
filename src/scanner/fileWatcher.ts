@@ -1,10 +1,13 @@
 import * as vscode from 'vscode';
 import { DiagnosticEngine } from '../diagnostics/diagnosticEngine';
 import { RelatedFilesTreeProvider } from '../navigation/relatedFilesTree';
+import { isRelevantCodeFile } from '../utils/pathUtils';
 import { WorkspaceScanner } from './workspaceScanner';
 
 export class FileWatcher implements vscode.Disposable {
   private readonly watcher: vscode.FileSystemWatcher;
+  private readonly changeDocumentSubscription: vscode.Disposable;
+  private readonly openDocumentSubscription: vscode.Disposable;
 
   constructor(
     private readonly scanner: WorkspaceScanner,
@@ -29,9 +32,27 @@ export class FileWatcher implements vscode.Disposable {
       this.diagnostics.removeFile(uri.fsPath, impactedPaths);
       this.treeProvider.refresh();
     });
+
+    this.openDocumentSubscription = vscode.workspace.onDidOpenTextDocument(document => {
+      if (!isRelevantCodeFile(document.fileName)) {
+        return;
+      }
+
+      this.diagnostics.refreshFile(document.fileName);
+    });
+
+    this.changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(event => {
+      if (!isRelevantCodeFile(event.document.fileName)) {
+        return;
+      }
+
+      this.diagnostics.refreshFile(event.document.fileName);
+    });
   }
 
   dispose(): void {
+    this.changeDocumentSubscription.dispose();
+    this.openDocumentSubscription.dispose();
     this.watcher.dispose();
   }
 }
