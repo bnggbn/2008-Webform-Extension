@@ -5,4 +5,6 @@ export enum DiagnosticKind {
   UnsupportedStringInterpolation = 'unsupportedStringInterpolation',
   UnsupportedNameofExpression = 'unsupportedNameofExpression',
   UnsupportedNullConditionalAccess = 'unsupportedNullConditionalAccess',
+  AspxEmbeddedJavaScriptParseError = 'aspxEmbeddedJavaScriptParseError',
+  AspxEmbeddedCssParseError = 'aspxEmbeddedCssParseError',
 }

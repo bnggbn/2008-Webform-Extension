@@ -7,6 +7,30 @@ This document defines the architecture for a future VS Code extension focused on
 The extension is not intended to replace `C# (Microsoft)` on day one.
 Its first job is to add WebForms-aware navigation, mapping, and lightweight diagnostics on top of existing C# support.
 
+## Current Implementation Status
+
+This document started as a forward-looking architecture draft.
+The codebase now implements most MVP layers and part of the embedded-language replacement roadmap.
+
+Implemented in code:
+
+- workspace scan + relationship resolution + related-files tree
+- navigation commands and CodeLens
+- structural diagnostics
+- compatibility diagnostics
+- embedded JS/CSS projection + diagnostics pipelines (with shared abstract base class)
+- embedded JavaScript symbols / same-file definition / hover
+- custom `webforms-aspx` language grammar and snippets
+- server control ID parsing (`runat="server"` elements) and designer field name enrichment
+- debug logging infrastructure for embedded language diagnostics (`debug.embeddedLanguageLogs`)
+- editor-event-driven incremental diagnostics (live refresh on document open/change)
+
+Partially implemented / intentionally limited:
+
+- embedded JavaScript completion exists in code but is intentionally not registered (import not present in `extension.ts`) to avoid noisy auto-popup behavior
+- built-in JS/CSS diagnostics are not suppressed; this extension publishes its own diagnostics in parallel
+- CSS validation uses a custom hand-written parser (not an external library)
+
 ## Product Positioning
 
 This extension is for developers maintaining legacy:
@@ -164,8 +188,15 @@ type WebFormEntry = {
   inherits?: string;
   codeFile?: string;
   codeBehindDirective?: string;
+  serverControlIds: string[];
+  designerFieldNames: string[];
 };
 ```
+
+Additional enrichment:
+
+- `serverControlIds` are extracted by `directiveParser.parseServerControlIds()` from `runat="server"` elements in markup
+- `designerFieldNames` are extracted by `WorkspaceScanner.enrichEntry()` via regex from `.designer.cs` files
 
 ### 4. Navigation Layer
 
@@ -204,16 +235,39 @@ Responsibilities:
 - map rule names to severities
 - allow project-specific tuning without code changes
 
-## Suggested Package Structure
+### 7. Embedded Projection Layer
+
+Responsibilities:
+
+- extract client-side `<script>` and `<style>` regions from `.aspx` / `.ascx` / `.master`
+- mask ASP.NET server tags in memory without modifying the source file
+- preserve stable offsets so projected diagnostics can be mapped back to the original document
+- provide projected text to downstream consumers: JS/CSS validation, symbol extraction, definition lookup, hover
+
+Implementation notes:
+
+- server expression tags are replaced with `null ` (JS) or `inherit` (CSS) to maintain offset stability
+- embedded diagnostic pipelines share an abstract base class (`embeddedLanguageDiagnosticsPipelineBase.ts`) that handles document refresh lifecycle
+- CSS validation uses a custom hand-written parser (no external CSS parser dependency)
+- JavaScript validation and symbol extraction use `ts.transpileModule` / `ts.createSourceFile` from TypeScript
+
+## Package Structure (Current)
 
 ```text
 src/
   extension.ts
+  logging/
+    outputChannel.ts
   scanner/
     workspaceScanner.ts
     fileWatcher.ts
   parser/
     directiveParser.ts
+    embedded/
+      embeddedRegionParser.ts
+      embeddedLanguageResolver.ts
+      htmlOpenTagParser.ts
+      types.ts
   resolver/
     relationshipResolver.ts
     namingConventionResolver.ts
@@ -221,9 +275,19 @@ src/
     commands.ts
     codeLensProvider.ts
     relatedFilesTree.ts
+    embeddedJavaScriptDocumentSymbolProvider.ts
+    embeddedJavaScriptDefinitionProvider.ts
+    embeddedJavaScriptHoverProvider.ts
+    embeddedJavaScriptCompletionProvider.ts
   diagnostics/
     diagnosticEngine.ts
+    embedded/
+      embeddedLanguageDiagnosticsPipelineBase.ts
+      aspxJavaScriptDiagnosticsPipeline.ts
+      aspxCssDiagnosticsPipeline.ts
+      embeddedDebugLog.ts
     structural/
+      structuralDiagnosticsPipeline.ts
       createStructuralRules.ts
       rules/
         missingCodeFileRule.ts
@@ -231,6 +295,7 @@ src/
         missingInheritsRule.ts
         rule.ts
     compatibility/
+      compatibilityDiagnosticsPipeline.ts
       createCompatibilityRules.ts
       compatibilityCore.ts
       compatibilityRuleUtils.ts
@@ -240,6 +305,15 @@ src/
         nameofCompatibilityRule.ts
         nullConditionalCompatibilityRule.ts
         rule.ts
+  projection/
+    aspxEmbeddedProjection.ts
+    aspxJavaScriptValidation.ts
+    aspxCssValidation.ts
+    aspxJavaScriptSymbols.ts
+    aspxJavaScriptDefinitions.ts
+    aspxJavaScriptHover.ts
+    aspxJavaScriptCompletion.ts
+    aspxJavaScriptUtils.ts
   config/
     settings.ts
     ruleConfig.ts
@@ -247,10 +321,21 @@ src/
     webFormEntry.ts
     diagnosticKinds.ts
   utils/
+    fileUtils.ts
     pathUtils.ts
     globUtils.ts
     textUtils.ts
+syntaxes/
+  webforms-aspx.tmLanguage.json
+snippets/
+  webforms-aspx.code-snippets
+language-configuration.json
 ```
+
+Grammar note:
+
+- Embedded ASP handling is centralized in the main `webforms-aspx` grammar (no separate injection grammar registration).
+- In quoted JS/CSS/HTML segments that contain `<%...%>`, ASP rules are evaluated first and string scopes are applied only to non-ASP text segments to reduce scope bleed.
 
 ## JSON Configuration Model
 
@@ -281,7 +366,9 @@ Example:
     "missingInherits": "warning",
     "unsupportedStringInterpolation": "error",
     "unsupportedNameofExpression": "error",
-    "unsupportedNullConditionalAccess": "error"
+    "unsupportedNullConditionalAccess": "error",
+    "embeddedJavaScriptParseError": "warning",
+    "embeddedCssParseError": "warning"
   }
 }
 ```
@@ -384,6 +471,8 @@ If future integration is needed, build an adapter layer rather than hardcoding a
 - avoid rescanning the full workspace on every change
 - parse only the directive/header area of markup files in v1
 - cache `WebFormEntry` records by file path and invalidate on related file changes
+- scanner skips generated files: `.g.cs`, `.g.i.cs`, `AssemblyInfo.cs`, `.designer.cs.cs`, and paths containing `\obj\` or `\bin\`
+- `FileWatcher` subscribes to `onDidOpenTextDocument` and `onDidChangeTextDocument` for editor-event-driven incremental diagnostics, and retroactively processes already-open documents at construction time
 
 ## Testing Strategy
 

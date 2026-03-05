@@ -1,0 +1,211 @@
+{
+  "ASP Expression Output": {
+    "prefix": ["asp=", "<%=", "out"],
+    "body": "<%= $0 %>",
+    "description": "ASP output expression"
+  },
+  "ASP Data Binding": {
+    "prefix": ["asp#", "<%#"],
+    "body": "<%# $0 %>",
+    "description": "ASP data-binding expression"
+  },
+  "ASP Code Block": {
+    "prefix": ["asp%", "<%"],
+    "body": "<% $0 %>",
+    "description": "ASP code block"
+  },
+  "ASP Resource Expression": {
+    "prefix": ["asp$", "<%$"],
+    "body": "<%$ $0 %>",
+    "description": "ASP resource expression"
+  },
+  "ASP Comment": {
+    "prefix": ["asp--", "<%--"],
+    "body": "<%-- $0 --%>",
+    "description": "ASP server-side comment"
+  },
+
+  "If Else": {
+    "prefix": "if",
+    "body": [
+      "If ${1:condition} Then",
+      "\t${2:' true}",
+      "Else",
+      "\t${3:' false}",
+      "End If"
+    ],
+    "description": "If ... Else ... End If"
+  },
+  "For Next": {
+    "prefix": "for",
+    "body": [
+      "For ${1:i} = ${2:0} To ${3:10} Step ${4:1}",
+      "\t${5:' body}",
+      "Next"
+    ],
+    "description": "For ... Next"
+  },
+  "For Each In": {
+    "prefix": "forin",
+    "body": [
+      "For Each ${1:item} In ${2:collection}",
+      "\t${3:' body}",
+      "Next"
+    ],
+    "description": "For Each ... In ... Next"
+  },
+  "While Loop": {
+    "prefix": "while",
+    "body": [
+      "While ${1:condition}",
+      "\t${2:' body}",
+      "Wend"
+    ],
+    "description": "While ... Wend"
+  },
+  "Do While Loop": {
+    "prefix": "dowhile",
+    "body": [
+      "Do While ${1:condition}",
+      "\t${2:' body}",
+      "Loop"
+    ],
+    "description": "Do While ... Loop"
+  },
+  "Do Until Loop": {
+    "prefix": "dountil",
+    "body": [
+      "Do Until ${1:condition}",
+      "\t${2:' body}",
+      "Loop"
+    ],
+    "description": "Do Until ... Loop"
+  },
+  "Select Case": {
+    "prefix": "sel",
+    "body": [
+      "Select Case ${1:expr}",
+      "\tCase ${2:value}",
+      "\t\t${3:' body}",
+      "End Select"
+    ],
+    "description": "Select Case"
+  },
+
+  "Request.Form": {
+    "prefix": "reqf",
+    "body": "Request.Form(\"${1:field}\")",
+    "description": "Request.Form(\"...\")"
+  },
+  "Request.QueryString": {
+    "prefix": "qs",
+    "body": "Request.QueryString(\"${1:name}\")",
+    "description": "Request.QueryString(\"...\")"
+  },
+  "Response.Write": {
+    "prefix": "wr",
+    "body": "Response.Write ${1:value}",
+    "description": "Response.Write"
+  },
+  "Response.Redirect": {
+    "prefix": "ri",
+    "body": "Response.Redirect(\"${1:url}\")",
+    "description": "Response.Redirect"
+  },
+  "Session Variable": {
+    "prefix": "sess",
+    "body": "Session(\"${1:key}\")",
+    "description": "Session(\"...\")"
+  },
+  "Application Variable": {
+    "prefix": "app",
+    "body": "Application(\"${1:key}\")",
+    "description": "Application(\"...\")"
+  },
+
+  "Page Directive": {
+    "prefix": "page",
+    "body": "<%@ Page Language=\"C#\" AutoEventWireup=\"true\" CodeFile=\"${TM_FILENAME_BASE}.aspx.cs\" Inherits=\"$1\" %>",
+    "description": "ASPX Page directive"
+  },
+  "Control Directive": {
+    "prefix": "control",
+    "body": "<%@ Control Language=\"C#\" AutoEventWireup=\"true\" CodeFile=\"${TM_FILENAME_BASE}.ascx.cs\" Inherits=\"$1\" %>",
+    "description": "ASCX Control directive"
+  },
+  "Master Directive": {
+    "prefix": "master",
+    "body": "<%@ Master Language=\"C#\" AutoEventWireup=\"true\" CodeFile=\"${TM_FILENAME_BASE}.master.cs\" Inherits=\"$1\" %>",
+    "description": "Master directive"
+  },
+  "Import Namespace": {
+    "prefix": "import",
+    "body": "<%@ Import Namespace=\"$1\" %>",
+    "description": "Import namespace directive"
+  },
+  "Register TagPrefix": {
+    "prefix": "register",
+    "body": "<%@ Register TagPrefix=\"$1\" Namespace=\"$2\" Assembly=\"$3\" %>",
+    "description": "Register custom control by assembly"
+  },
+
+  "asp:TextBox": {
+    "prefix": "asp:textbox",
+    "body": "<asp:TextBox ID=\"$1TextBox\" runat=\"server\" Text=\"$2\" />",
+    "description": "Insert asp:TextBox"
+  },
+  "asp:Label": {
+    "prefix": "asp:label",
+    "body": "<asp:Label ID=\"$1Label\" runat=\"server\" Text=\"$2\" />",
+    "description": "Insert asp:Label"
+  },
+  "asp:Button": {
+    "prefix": "asp:button",
+    "body": "<asp:Button ID=\"$1Button\" runat=\"server\" Text=\"$2\" OnClick=\"$1Button_Click\" />",
+    "description": "Insert asp:Button"
+  },
+  "asp:HiddenField": {
+    "prefix": "asp:hidden",
+    "body": "<asp:HiddenField ID=\"$1HiddenField\" runat=\"server\" Value=\"$2\" />",
+    "description": "Insert asp:HiddenField"
+  },
+  "asp:DropDownList": {
+    "prefix": "asp:dropdown",
+    "body": [
+      "<asp:DropDownList ID=\"$1DropDownList\" runat=\"server\">",
+      "\t<asp:ListItem Value=\"$2\" Text=\"$3\" />",
+      "\t$0",
+      "</asp:DropDownList>"
+    ],
+    "description": "Insert asp:DropDownList"
+  },
+  "asp:Panel": {
+    "prefix": "asp:panel",
+    "body": [
+      "<asp:Panel ID=\"$1Panel\" runat=\"server\">",
+      "\t$0",
+      "</asp:Panel>"
+    ],
+    "description": "Insert asp:Panel"
+  },
+  "asp:GridView": {
+    "prefix": "asp:gridview",
+    "body": [
+      "<asp:GridView ID=\"$1GridView\" runat=\"server\" AutoGenerateColumns=\"False\" DataKeyNames=\"$2\">",
+      "\t<Columns>",
+      "\t\t$0",
+      "\t</Columns>",
+      "</asp:GridView>"
+    ],
+    "description": "Insert asp:GridView"
+  },
+  "asp:SqlDataSource": {
+    "prefix": "asp:sqldatasource",
+    "body": [
+      "<asp:SqlDataSource ID=\"$1SqlDataSource\" runat=\"server\"",
+      "\tConnectionString=\"<%$ ConnectionStrings:$2 %>\"",
+      "\tSelectCommand=\"$3\" />"
+    ],
+    "description": "Insert asp:SqlDataSource"
+  }
+}

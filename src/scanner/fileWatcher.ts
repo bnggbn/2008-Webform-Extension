@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { DiagnosticEngine } from '../diagnostics/diagnosticEngine';
 import { RelatedFilesTreeProvider } from '../navigation/relatedFilesTree';
-import { isRelevantCodeFile } from '../utils/pathUtils';
+import { isMarkupFile, isRelevantCodeFile } from '../utils/pathUtils';
 import { WorkspaceScanner } from './workspaceScanner';
 
 export class FileWatcher implements vscode.Disposable {
@@ -34,7 +34,7 @@ export class FileWatcher implements vscode.Disposable {
     });
 
     this.openDocumentSubscription = vscode.workspace.onDidOpenTextDocument(document => {
-      if (!isRelevantCodeFile(document.fileName)) {
+      if (!shouldRefreshInEditor(document.fileName)) {
         return;
       }
 
@@ -42,12 +42,20 @@ export class FileWatcher implements vscode.Disposable {
     });
 
     this.changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(event => {
-      if (!isRelevantCodeFile(event.document.fileName)) {
+      if (!shouldRefreshInEditor(event.document.fileName)) {
         return;
       }
 
       this.diagnostics.refreshFile(event.document.fileName);
     });
+
+    // VS Code can restore editors before this watcher is wired.
+    // Refresh already-open relevant files once so diagnostics are in sync.
+    for (const document of vscode.workspace.textDocuments) {
+      if (shouldRefreshInEditor(document.fileName)) {
+        this.diagnostics.refreshFile(document.fileName);
+      }
+    }
   }
 
   dispose(): void {
@@ -55,4 +63,8 @@ export class FileWatcher implements vscode.Disposable {
     this.openDocumentSubscription.dispose();
     this.watcher.dispose();
   }
+}
+
+function shouldRefreshInEditor(filePath: string): boolean {
+  return isRelevantCodeFile(filePath) || isMarkupFile(filePath);
 }

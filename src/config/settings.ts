@@ -7,6 +7,9 @@ export type CompatibilityProfile = 'vs2005' | 'vs2008' | 'vs2010' | 'vs2012' | '
 export type WebFormsSettings = {
   enableCodeLens: boolean;
   enableDiagnostics: boolean;
+  debug: {
+    embeddedLanguageLogs: boolean;
+  };
   includeGlobs: string[];
   excludeGlobs: string[];
   includeGlobsPattern: string;
@@ -22,6 +25,8 @@ export type WebFormsSettings = {
     unsupportedStringInterpolation: RuleLevel;
     unsupportedNameofExpression: RuleLevel;
     unsupportedNullConditionalAccess: RuleLevel;
+    embeddedJavaScriptParseError: RuleLevel;
+    embeddedCssParseError: RuleLevel;
   };
 };
 
@@ -37,6 +42,9 @@ export function loadSettings(): WebFormsSettings {
   return {
     enableCodeLens: config.get<boolean>('enableCodeLens', true),
     enableDiagnostics: config.get<boolean>('enableDiagnostics', true),
+    debug: {
+      embeddedLanguageLogs: config.get<boolean>('debug.embeddedLanguageLogs', false),
+    },
     includeGlobs: config.get<string[]>('includeGlobs', DEFAULT_INCLUDE_GLOBS),
     excludeGlobs,
     includeGlobsPattern: toGlobPattern(config.get<string[]>('includeGlobs', DEFAULT_INCLUDE_GLOBS)),
@@ -52,6 +60,14 @@ export function loadSettings(): WebFormsSettings {
       unsupportedStringInterpolation: config.get<RuleLevel>('rules.unsupportedStringInterpolation', 'error'),
       unsupportedNameofExpression: config.get<RuleLevel>('rules.unsupportedNameofExpression', 'error'),
       unsupportedNullConditionalAccess: config.get<RuleLevel>('rules.unsupportedNullConditionalAccess', 'error'),
+      embeddedJavaScriptParseError: config.get<RuleLevel>('rules.embeddedJavaScriptParseError', 'warning'),
+      embeddedCssParseError: config.get<RuleLevel>('rules.embeddedCssParseError', 'warning'),
     },
   };
+}
+
+export function isEmbeddedDebugLogsEnabled(): boolean {
+  return vscode.workspace
+    .getConfiguration('webformsHelper')
+    .get<boolean>('debug.embeddedLanguageLogs', false);
 }

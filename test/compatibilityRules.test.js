@@ -30,6 +30,8 @@ function createSettings(profile, csharpLanguageVersion = '') {
       unsupportedStringInterpolation: 'error',
       unsupportedNameofExpression: 'error',
       unsupportedNullConditionalAccess: 'error',
+      embeddedJavaScriptParseError: 'warning',
+      embeddedCssParseError: 'warning',
     },
   };
 }

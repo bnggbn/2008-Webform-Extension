@@ -7,6 +7,14 @@ Current features:
 - WebForms related-file navigation
 - structural diagnostics for common WebForms file relationship issues
 - legacy C# compatibility diagnostics for syntax that Roslyn may not flag when targeting older environments
+- custom `webforms-aspx` language takeover for `.aspx`, `.ascx`, and `.master`
+- ASPX single grammar for ASP.NET server tags in HTML/JS/CSS contexts (no injection grammar)
+- WebForms ASPX snippets for common directives and server controls
+- in-memory ASPX embedded-region projection for JS/CSS-aware analysis with stable offset mapping
+- embedded JavaScript parse diagnostics for server-tag-heavy script/attribute regions
+- embedded CSS parse diagnostics for server-tag-heavy style/attribute regions (custom hand-written CSS validator)
+- embedded JavaScript document symbols (Outline), same-file definition lookup, and hover
+- debug logging for embedded language diagnostics (`webformsHelper.debug.embeddedLanguageLogs`)
 
 Current commands:
 
@@ -14,6 +22,19 @@ Current commands:
 - `WebForms: Go to Markup`
 - `WebForms: Go to Designer`
 - `WebForms: Refresh Relationships`
+
+## Embedded JavaScript Features
+
+Current embedded JavaScript editor features on `.aspx` / `.ascx` / `.master` (registered via `**/*.{aspx,ascx,master,ashx,asmx}` document filter):
+
+- parse diagnostics for projected JS regions that contain server tags
+- document symbols for local functions/variables in embedded script blocks
+- same-file definition lookup (`F12`) for projected symbols
+- hover for projected symbols
+
+Note:
+
+- completion provider code exists but is intentionally not registered (import not present in `extension.ts`) to avoid noisy auto-popup behavior in legacy maintenance workflows.
 
 ## Compatibility Diagnostics
 
@@ -44,7 +65,9 @@ Example workspace settings:
   "webformsHelper.compatibility.profile": "vs2008",
   "webformsHelper.rules.unsupportedStringInterpolation": "error",
   "webformsHelper.rules.unsupportedNameofExpression": "error",
-  "webformsHelper.rules.unsupportedNullConditionalAccess": "error"
+  "webformsHelper.rules.unsupportedNullConditionalAccess": "error",
+  "webformsHelper.rules.embeddedJavaScriptParseError": "warning",
+  "webformsHelper.rules.embeddedCssParseError": "warning"
 }
 ```
 
@@ -64,6 +87,16 @@ Current structural diagnostics:
 - missing code-behind file
 - missing designer file
 - missing `Inherits`
+
+## Syntax and Snippets
+
+- custom grammar: `syntaxes/webforms-aspx.tmLanguage.json`
+- snippet bundle: `snippets/webforms-aspx.code-snippets`
+
+Known limitation:
+
+- TextMate scope interactions in mixed ASPX + embedded JS/CSS strings can still require iterative tuning on real-world legacy markup patterns.
+- Current mitigation: inside quoted JS/CSS/HTML segments containing server tags, ASP patterns are matched first, then only non-ASP text is assigned string scope.
 
 ## Development
 

@@ -1,7 +1,7 @@
-import * as fs from 'fs';
 import * as vscode from 'vscode';
 import { WebFormsSettings } from '../../config/settings';
 import { WorkspaceScanner } from '../../scanner/workspaceScanner';
+import { tryReadFile } from '../../utils/fileUtils';
 import { isRelevantCodeFile } from '../../utils/pathUtils';
 import { createCompatibilityRules } from './createCompatibilityRules';
 import { CompatibilityRule } from './rules/rule';
@@ -67,17 +67,6 @@ export class CompatibilityDiagnosticsPipeline {
   }
 
   private tryReadFile(path: string): string | undefined {
-    const openDocument = vscode.workspace.textDocuments.find(document =>
-      document.uri.scheme === 'file' && document.fileName.toLowerCase() === path.toLowerCase()
-    );
-    if (openDocument) {
-      return openDocument.getText();
-    }
-
-    try {
-      return fs.readFileSync(path, 'utf8');
-    } catch {
-      return undefined;
-    }
+    return tryReadFile(path);
   }
 }

@@ -1,0 +1,184 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "WebForms ASPX",
+  "scopeName": "text.html.webforms",
+  "patterns": [
+    { "include": "#topLevelDirective" },
+    { "include": "#aspComment" },
+    { "include": "#aspInlineExpression" },
+    { "include": "#aspBlock" },
+    { "include": "#scriptBlock" },
+    { "include": "#styleBlock" },
+    { "include": "#tagWithAspBlock" },
+    { "include": "text.html.derivative" }
+  ],
+  "repository": {
+    "topLevelDirective": {
+      "name": "meta.directive.asp",
+      "begin": "^(?:\\uFEFF)?\\s*<%@",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.embedded.begin.asp" }
+      },
+      "end": "%>",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.asp" }
+      },
+      "patterns": [
+        {
+          "match": "\\b(Page|Register|Import|Assembly|Control|Master|PreviousPageType|MasterType|OutputCache|Reference|Implements)\\b",
+          "name": "keyword.other.directive.asp"
+        },
+        {
+          "match": "([A-Za-z][A-Za-z0-9]*)(?=\\s*=)",
+          "name": "entity.other.attribute-name.asp"
+        },
+        { "name": "string.quoted.double.asp", "begin": "\"", "end": "\"" },
+        { "name": "string.quoted.single.asp", "begin": "'", "end": "'" }
+      ]
+    },
+    "aspComment": {
+      "name": "comment.block.asp",
+      "begin": "<%--",
+      "end": "--%>"
+    },
+    "aspInlineExpression": {
+      "name": "meta.embedded.block.asp.expression",
+      "begin": "<%[ \t]*[=:#$]",
+      "end": "%>",
+      "contentName": "source.cs",
+      "patterns": [{ "include": "source.cs" }]
+    },
+    "aspBlock": {
+      "name": "meta.embedded.block.asp",
+      "begin": "<%(?!--|@|[ \t]*[=:#$])",
+      "end": "%>",
+      "contentName": "source.cs",
+      "patterns": [{ "include": "source.cs" }]
+    },
+    "scriptBlock": {
+      "name": "meta.element.script.html",
+      "begin": "(?i)(<)(script)((?:[^>]|\"[^\"]*\"|'[^']*')*)(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.html" },
+        "3": { "name": "meta.tag.script.html" },
+        "4": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(?i)(</)(script)(\\s*>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.script.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.js.embedded.html",
+      "patterns": [
+        { "include": "#aspComment" },
+        { "include": "#aspInlineExpression" },
+        { "include": "#aspBlock" },
+        {
+          "comment": "Single-quoted JS string containing ASP; parse ASP first and scope only non-ASP text as string.",
+          "begin": "'(?=[^'\\n]*<%)",
+          "end": "'",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<'\\n]+", "name": "string.quoted.single.js" }
+          ]
+        },
+        {
+          "comment": "Double-quoted JS string containing ASP; parse ASP first and scope only non-ASP text as string.",
+          "begin": "\"(?=[^\"\\n]*<%)",
+          "end": "\"",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<\"\\n]+", "name": "string.quoted.double.js" }
+          ]
+        },
+        { "include": "source.js" }
+      ]
+    },
+    "styleBlock": {
+      "name": "meta.element.style.html",
+      "begin": "(?i)(<)(style)((?:[^>]|\"[^\"]*\"|'[^']*')*)(>)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.style.html" },
+        "3": { "name": "meta.tag.style.html" },
+        "4": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "end": "(?i)(</)(style)(\\s*>)",
+      "endCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.style.html" },
+        "3": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "contentName": "source.css.embedded.html",
+      "patterns": [
+        { "include": "#aspComment" },
+        { "include": "#aspInlineExpression" },
+        { "include": "#aspBlock" },
+        {
+          "begin": "'(?=[^'\\n]*<%)",
+          "end": "'",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<'\\n]+", "name": "string.quoted.single.css" }
+          ]
+        },
+        {
+          "begin": "\"(?=[^\"\\n]*<%)",
+          "end": "\"",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<\"\\n]+", "name": "string.quoted.double.css" }
+          ]
+        },
+        { "include": "source.css" }
+      ]
+    },
+    "tagWithAspBlock": {
+      "name": "meta.tag.other.webforms.html",
+      "begin": "(</?)((?:[A-Za-z][\\w.-]*:)?[A-Za-z][\\w.-]*)(?=[^>]*<%)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" }
+      },
+      "end": ">",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#aspComment" },
+        { "include": "#aspInlineExpression" },
+        { "include": "#aspBlock" },
+        {
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<\"\\n]+", "name": "string.quoted.double.html" }
+          ]
+        },
+        {
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<'\\n]+", "name": "string.quoted.single.html" }
+          ]
+        }
+      ]
+    }
+  }
+}

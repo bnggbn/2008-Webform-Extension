@@ -2,14 +2,20 @@ import * as vscode from 'vscode';
 import { WebFormsSettings } from '../config/settings';
 import { WorkspaceScanner } from '../scanner/workspaceScanner';
 import { CompatibilityDiagnosticsPipeline } from './compatibility/compatibilityDiagnosticsPipeline';
+import { AspxCssDiagnosticsPipeline } from './embedded/aspxCssDiagnosticsPipeline';
+import { AspxJavaScriptDiagnosticsPipeline } from './embedded/aspxJavaScriptDiagnosticsPipeline';
 import { StructuralDiagnosticsPipeline } from './structural/structuralDiagnosticsPipeline';
 import { isRelevantCodeFile } from '../utils/pathUtils';
 
 export class DiagnosticEngine implements vscode.Disposable {
   private readonly webFormsCollection = vscode.languages.createDiagnosticCollection('webformsHelper-webforms');
   private readonly compatibilityCollection = vscode.languages.createDiagnosticCollection('webformsHelper-compatibility');
+  private readonly embeddedJavaScriptCollection = vscode.languages.createDiagnosticCollection('webformsHelper-embedded-javascript');
+  private readonly embeddedCssCollection = vscode.languages.createDiagnosticCollection('webformsHelper-embedded-css');
   private readonly structuralPipeline: StructuralDiagnosticsPipeline;
   private readonly compatibilityPipeline: CompatibilityDiagnosticsPipeline;
+  private readonly embeddedJavaScriptPipeline: AspxJavaScriptDiagnosticsPipeline;
+  private readonly embeddedCssPipeline: AspxCssDiagnosticsPipeline;
 
   constructor(
     private readonly settings: WebFormsSettings,
@@ -25,11 +31,23 @@ export class DiagnosticEngine implements vscode.Disposable {
       this.scanner,
       this.compatibilityCollection
     );
+    this.embeddedJavaScriptPipeline = new AspxJavaScriptDiagnosticsPipeline(
+      this.settings,
+      this.scanner,
+      this.embeddedJavaScriptCollection
+    );
+    this.embeddedCssPipeline = new AspxCssDiagnosticsPipeline(
+      this.settings,
+      this.scanner,
+      this.embeddedCssCollection
+    );
   }
 
   dispose(): void {
     this.webFormsCollection.dispose();
     this.compatibilityCollection.dispose();
+    this.embeddedJavaScriptCollection.dispose();
+    this.embeddedCssCollection.dispose();
   }
 
   refreshAll(): void {
@@ -54,6 +72,8 @@ export class DiagnosticEngine implements vscode.Disposable {
 
     this.structuralPipeline.refreshAll();
     this.compatibilityPipeline.refreshAll();
+    this.embeddedJavaScriptPipeline.refreshAll();
+    this.embeddedCssPipeline.refreshAll();
   }
 
   // Incremental refresh keeps the two pipelines independent:
@@ -68,6 +88,8 @@ export class DiagnosticEngine implements vscode.Disposable {
     const impactedPaths = this.scanner.getImpactedPaths(filePath);
     this.structuralPipeline.refreshPaths(impactedPaths);
     this.compatibilityPipeline.refreshFile(filePath);
+    this.embeddedJavaScriptPipeline.refreshPaths(impactedPaths);
+    this.embeddedCssPipeline.refreshPaths(impactedPaths);
   }
 
   // Remove handling clears stale diagnostics first, then rebuilds any surviving
@@ -81,6 +103,8 @@ export class DiagnosticEngine implements vscode.Disposable {
     }
 
     this.structuralPipeline.refreshPaths(stalePaths);
+    this.embeddedJavaScriptPipeline.refreshPaths(stalePaths);
+    this.embeddedCssPipeline.refreshPaths(stalePaths);
     if (isRelevantCodeFile(filePath)) {
       this.compatibilityPipeline.deleteFile(filePath);
     }
@@ -89,12 +113,16 @@ export class DiagnosticEngine implements vscode.Disposable {
   private clearAllCollections(): void {
     this.webFormsCollection.clear();
     this.compatibilityCollection.clear();
+    this.embeddedJavaScriptCollection.clear();
+    this.embeddedCssCollection.clear();
   }
 
   private clearFile(filePath: string): void {
     const uri = vscode.Uri.file(filePath);
     this.webFormsCollection.delete(uri);
     this.compatibilityCollection.delete(uri);
+    this.embeddedJavaScriptCollection.delete(uri);
+    this.embeddedCssCollection.delete(uri);
   }
 
   private clearPaths(paths: string[]): void {

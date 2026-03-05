@@ -13,7 +13,7 @@
   "activationEvents": [
     "onStartupFinished",
     "onLanguage:csharp",
-    "onLanguage:html",
+    "onLanguage:webforms-aspx",
     "onCommand:webformsHelper.goToCodeBehind",
     "onCommand:webformsHelper.goToMarkup",
     "onCommand:webformsHelper.goToDesigner",
@@ -22,6 +22,50 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "languages": [
+      {
+        "id": "webforms-aspx",
+        "aliases": [
+          "WebForms ASPX",
+          "ASPX"
+        ],
+        "extensions": [
+          ".aspx",
+          ".ascx",
+          ".master"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "webforms-aspx",
+        "scopeName": "text.html.webforms",
+        "path": "./syntaxes/webforms-aspx.tmLanguage.json",
+        "embeddedLanguages": {
+          "source.js": "javascript",
+          "source.js.embedded.html": "javascript",
+          "source.css": "css",
+          "source.css.embedded.html": "css",
+          "meta.embedded.block.asp": "csharp",
+          "meta.embedded.block.asp.expression": "csharp",
+          "meta.embedded.block.asp.directive": "csharp"
+        }
+      }
+    ],
+    "snippets": [
+      {
+        "language": "webforms-aspx",
+        "path": "./snippets/webforms-aspx.code-snippets"
+      }
+    ],
+    "configurationDefaults": {
+      "files.associations": {
+        "*.aspx": "webforms-aspx",
+        "*.ascx": "webforms-aspx",
+        "*.master": "webforms-aspx"
+      }
+    },
     "commands": [
       {
         "command": "webformsHelper.goToCodeBehind",
@@ -58,6 +102,11 @@
         "webformsHelper.enableDiagnostics": {
           "type": "boolean",
           "default": true
+        },
+        "webformsHelper.debug.embeddedLanguageLogs": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose embedded JS/CSS parser and projection logs in Output > WebForms Helper."
         },
         "webformsHelper.includeGlobs": {
           "type": "array",
@@ -123,6 +172,14 @@
         "webformsHelper.rules.unsupportedNullConditionalAccess": {
           "type": "string",
           "default": "error"
+        },
+        "webformsHelper.rules.embeddedJavaScriptParseError": {
+          "type": "string",
+          "default": "warning"
+        },
+        "webformsHelper.rules.embeddedCssParseError": {
+          "type": "string",
+          "default": "warning"
         }
       }
     }
