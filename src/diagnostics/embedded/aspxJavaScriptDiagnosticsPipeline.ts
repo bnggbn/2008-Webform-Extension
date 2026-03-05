@@ -1,22 +1,29 @@
-import { RuleLevel, WebFormsSettings } from '../../config/settings';
-import { DiagnosticKind } from '../../models/diagnosticKinds';
-import { EmbeddedLanguage } from '../../parser/embedded/types';
-import { collectProjectedJavaScriptDiagnostics } from '../../projection/aspxJavaScriptValidation';
-import { WorkspaceScanner } from '../../scanner/workspaceScanner';
 import * as vscode from 'vscode';
-import { EmbeddedLanguageDiagnosticsPipelineBase, ProjectedDiagnostic } from './embeddedLanguageDiagnosticsPipelineBase';
+import { WebFormsSettings } from '../../config/settings';
+import { DiagnosticKind } from '../../models/diagnosticKinds';
+import { projectAspxEmbeddedRegions } from '../../projection/aspxEmbeddedProjection';
+import { WorkspaceScanner } from '../../scanner/workspaceScanner';
+import { collectProjectedJavaScriptDiagnostics } from '../../services/embedded/javascript/aspxJavaScriptValidation';
+import { EmbeddedDiagnosticsRunner } from './embeddedDiagnosticsRunner';
 
-export class AspxJavaScriptDiagnosticsPipeline extends EmbeddedLanguageDiagnosticsPipelineBase {
+export class AspxJavaScriptDiagnosticsPipeline {
+  private readonly runner: EmbeddedDiagnosticsRunner;
+
   constructor(settings: WebFormsSettings, scanner: WorkspaceScanner, collection: vscode.DiagnosticCollection) {
-    super(settings, scanner, collection);
+    this.runner = new EmbeddedDiagnosticsRunner({
+      collection,
+      scanner,
+      logPrefix: 'Embedded JS',
+      diagnosticKind: DiagnosticKind.AspxEmbeddedJavaScriptParseError,
+      getRuleSettingValue: () => settings.rules.embeddedJavaScriptParseError,
+      isDiagnosticsEnabled: () => settings.enableDiagnostics,
+      getProjectedRegions: text => projectAspxEmbeddedRegions(text)
+        .filter(region => region.language === 'javascript' && region.hasServerTags),
+      collectDiagnostics: text => collectProjectedJavaScriptDiagnostics(text),
+    });
   }
 
-  protected get language(): EmbeddedLanguage { return 'javascript'; }
-  protected get diagnosticKind(): DiagnosticKind { return DiagnosticKind.AspxEmbeddedJavaScriptParseError; }
-  protected get logPrefix(): string { return 'Embedded JS'; }
-  protected get ruleSettingValue(): RuleLevel { return this.settings.rules.embeddedJavaScriptParseError; }
-
-  protected collectDiagnostics(text: string): ProjectedDiagnostic[] {
-    return collectProjectedJavaScriptDiagnostics(text);
-  }
+  refreshAll(): void { this.runner.refreshAll(); }
+  refreshPaths(paths: string[]): void { this.runner.refreshPaths(paths); }
+  deleteFile(filePath: string): void { this.runner.deleteFile(filePath); }
 }

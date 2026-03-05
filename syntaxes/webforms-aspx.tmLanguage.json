@@ -9,6 +9,8 @@
     { "include": "#aspBlock" },
     { "include": "#scriptBlock" },
     { "include": "#styleBlock" },
+    { "include": "#tagWithEventHandler" },
+    { "include": "#prefixedTag" },
     { "include": "#tagWithAspBlock" },
     { "include": "text.html.derivative" }
   ],
@@ -141,6 +143,130 @@
           ]
         },
         { "include": "source.css" }
+      ]
+    },
+    "tagWithEventHandler": {
+      "name": "meta.tag.other.webforms.event.html",
+      "begin": "(</?)((?:[A-Za-z][\\w.-]*:)?[A-Za-z][\\w.-]*)(?=[^>]*\\bon[A-Za-z0-9_:-]*\\s*=)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" }
+      },
+      "end": ">",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#aspComment" },
+        { "include": "#aspInlineExpression" },
+        { "include": "#aspBlock" },
+        {
+          "match": "([A-Za-z_:][A-Za-z0-9_:\\.-]*)(?=\\s*=)",
+          "name": "entity.other.attribute-name.html"
+        },
+        { "match": "=", "name": "punctuation.separator.key-value.html" },
+        {
+          "begin": "(?i)(on[A-Za-z0-9_:-]*)(\\s*=\\s*)(\")",
+          "beginCaptures": {
+            "1": { "name": "entity.other.attribute-name.html" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "\"",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.html" }
+          },
+          "contentName": "source.js.embedded.html",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "include": "source.js" }
+          ]
+        },
+        {
+          "begin": "(?i)(on[A-Za-z0-9_:-]*)(\\s*=\\s*)(')",
+          "beginCaptures": {
+            "1": { "name": "entity.other.attribute-name.html" },
+            "2": { "name": "punctuation.separator.key-value.html" },
+            "3": { "name": "punctuation.definition.string.begin.html" }
+          },
+          "end": "'",
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.html" }
+          },
+          "contentName": "source.js.embedded.html",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "include": "source.js" }
+          ]
+        },
+        {
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<\"\\n]+", "name": "string.quoted.double.html" }
+          ]
+        },
+        {
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<'\\n]+", "name": "string.quoted.single.html" }
+          ]
+        },
+        { "match": "[^\\s>]+", "name": "string.unquoted.html" }
+      ]
+    },
+    "prefixedTag": {
+      "name": "meta.tag.other.webforms.prefixed.html",
+      "begin": "(</?)([A-Za-z][\\w.-]*:[A-Za-z][\\w.-]*)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.tag.begin.html" },
+        "2": { "name": "entity.name.tag.html" }
+      },
+      "end": ">",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.tag.end.html" }
+      },
+      "patterns": [
+        { "include": "#aspComment" },
+        { "include": "#aspInlineExpression" },
+        { "include": "#aspBlock" },
+        {
+          "match": "([A-Za-z_:][A-Za-z0-9_:\\.-]*)(?=\\s*=)",
+          "name": "entity.other.attribute-name.html"
+        },
+        { "match": "=", "name": "punctuation.separator.key-value.html" },
+        {
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<\"\\n]+", "name": "string.quoted.double.html" }
+          ]
+        },
+        {
+          "begin": "'",
+          "end": "'",
+          "patterns": [
+            { "include": "#aspComment" },
+            { "include": "#aspInlineExpression" },
+            { "include": "#aspBlock" },
+            { "match": "[^<'\\n]+", "name": "string.quoted.single.html" }
+          ]
+        },
+        { "match": "[^\\s>]+", "name": "string.unquoted.html" }
       ]
     },
     "tagWithAspBlock": {

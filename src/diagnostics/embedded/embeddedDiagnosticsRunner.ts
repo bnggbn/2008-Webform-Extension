@@ -1,38 +1,38 @@
 import * as vscode from 'vscode';
 import { toSeverity } from '../../config/ruleConfig';
-import { isEmbeddedDebugLogsEnabled, RuleLevel, WebFormsSettings } from '../../config/settings';
+import { isEmbeddedDebugLogsEnabled, RuleLevel } from '../../config/settings';
 import { logOutput } from '../../logging/outputChannel';
 import { DiagnosticKind } from '../../models/diagnosticKinds';
 import { WebFormEntry } from '../../models/webFormEntry';
-import { EmbeddedLanguage } from '../../parser/embedded/types';
-import { projectAspxEmbeddedRegions } from '../../projection/aspxEmbeddedProjection';
+import { EmbeddedProjectionRegion } from '../../projection/aspxEmbeddedProjection';
 import { WorkspaceScanner } from '../../scanner/workspaceScanner';
 import { tryReadFile } from '../../utils/fileUtils';
 import { isMarkupFile } from '../../utils/pathUtils';
 import { positionAt } from '../../utils/textUtils';
 import { buildEmbeddedRegionDebugLines, buildEmbeddedRegionLineSummary } from './embeddedDebugLog';
 
-export type ProjectedDiagnostic = {
+export type EmbeddedProjectedDiagnostic = {
   start: number;
   length: number;
   message: string;
 };
 
-export abstract class EmbeddedLanguageDiagnosticsPipelineBase {
-  constructor(
-    protected readonly settings: WebFormsSettings,
-    protected readonly scanner: WorkspaceScanner,
-    protected readonly collection: vscode.DiagnosticCollection
-  ) {}
+type EmbeddedDiagnosticsRunnerOptions = {
+  collection: vscode.DiagnosticCollection;
+  scanner: WorkspaceScanner;
+  logPrefix: string;
+  diagnosticKind: DiagnosticKind;
+  getRuleSettingValue: () => RuleLevel;
+  isDiagnosticsEnabled: () => boolean;
+  getProjectedRegions: (text: string) => EmbeddedProjectionRegion[];
+  collectDiagnostics: (text: string) => EmbeddedProjectedDiagnostic[];
+};
 
-  protected abstract get language(): EmbeddedLanguage;
-  protected abstract get diagnosticKind(): DiagnosticKind;
-  protected abstract get logPrefix(): string;
-  protected abstract get ruleSettingValue(): RuleLevel;
-  protected abstract collectDiagnostics(text: string): ProjectedDiagnostic[];
+export class EmbeddedDiagnosticsRunner {
+  constructor(private readonly options: EmbeddedDiagnosticsRunnerOptions) {}
 
   refreshAll(): void {
-    for (const entry of this.scanner.getAllEntries()) {
+    for (const entry of this.options.scanner.getAllEntries()) {
       this.refreshMarkup(entry);
     }
   }
@@ -40,8 +40,8 @@ export abstract class EmbeddedLanguageDiagnosticsPipelineBase {
   refreshPaths(paths: string[]): void {
     const markupPaths = new Set<string>();
     for (const path of paths) {
-      this.collection.delete(vscode.Uri.file(path));
-      const entry = this.scanner.getEntryForFile(path);
+      this.options.collection.delete(vscode.Uri.file(path));
+      const entry = this.options.scanner.getEntryForFile(path);
       if (entry?.markupPath) {
         markupPaths.add(entry.markupPath);
       } else if (isMarkupFile(path)) {
@@ -50,7 +50,7 @@ export abstract class EmbeddedLanguageDiagnosticsPipelineBase {
     }
 
     for (const markupPath of markupPaths) {
-      const entry = this.scanner.getEntryForFile(markupPath);
+      const entry = this.options.scanner.getEntryForFile(markupPath);
       if (entry) {
         this.refreshMarkup(entry);
       } else {
@@ -60,7 +60,7 @@ export abstract class EmbeddedLanguageDiagnosticsPipelineBase {
   }
 
   deleteFile(filePath: string): void {
-    this.collection.delete(vscode.Uri.file(filePath));
+    this.options.collection.delete(vscode.Uri.file(filePath));
   }
 
   private refreshMarkup(entry: WebFormEntry): void {
@@ -68,26 +68,25 @@ export abstract class EmbeddedLanguageDiagnosticsPipelineBase {
   }
 
   private refreshMarkupPath(markupPath: string): void {
+    const ruleSettingValue = this.options.getRuleSettingValue();
     if (
-      !this.settings.enableDiagnostics
-      || this.ruleSettingValue === 'off'
+      !this.options.isDiagnosticsEnabled()
+      || ruleSettingValue === 'off'
       || !isMarkupFile(markupPath)
     ) {
-      this.collection.delete(vscode.Uri.file(markupPath));
+      this.options.collection.delete(vscode.Uri.file(markupPath));
       return;
     }
 
     const text = tryReadFile(markupPath);
     if (text === undefined) {
-      this.collection.delete(vscode.Uri.file(markupPath));
-      logOutput(`${this.logPrefix}: unable to read markup "${markupPath}".`);
+      this.options.collection.delete(vscode.Uri.file(markupPath));
+      logOutput(`${this.options.logPrefix}: unable to read markup "${markupPath}".`);
       return;
     }
 
-    const projectedRegions = projectAspxEmbeddedRegions(text)
-      .filter(region => region.language === this.language && region.hasServerTags);
-
-    const diagnostics = this.collectDiagnostics(text).map(item => {
+    const projectedRegions = this.options.getProjectedRegions(text);
+    const diagnostics = this.options.collectDiagnostics(text).map(item => {
       const start = positionAt(text, item.start);
       const end = positionAt(text, item.start + item.length);
       const diagnostic = new vscode.Diagnostic(
@@ -96,27 +95,27 @@ export abstract class EmbeddedLanguageDiagnosticsPipelineBase {
           new vscode.Position(end.line, end.character)
         ),
         item.message,
-        toSeverity(this.ruleSettingValue)
+        toSeverity(ruleSettingValue)
       );
       diagnostic.source = 'webformsHelper';
-      diagnostic.code = this.diagnosticKind;
+      diagnostic.code = this.options.diagnosticKind;
       return diagnostic;
     });
 
     logOutput(
-      `${this.logPrefix}: "${markupPath}" regions=${projectedRegions.length} diagnostics=${diagnostics.length} lines=${buildEmbeddedRegionLineSummary(text, projectedRegions)}.`
+      `${this.options.logPrefix}: "${markupPath}" regions=${projectedRegions.length} diagnostics=${diagnostics.length} lines=${buildEmbeddedRegionLineSummary(text, projectedRegions)}.`
     );
     if (isEmbeddedDebugLogsEnabled()) {
-      for (const line of buildEmbeddedRegionDebugLines(text, this.logPrefix, projectedRegions)) {
+      for (const line of buildEmbeddedRegionDebugLines(text, this.options.logPrefix, projectedRegions)) {
         logOutput(line);
       }
     }
 
     if (diagnostics.length === 0) {
-      this.collection.delete(vscode.Uri.file(markupPath));
+      this.options.collection.delete(vscode.Uri.file(markupPath));
       return;
     }
 
-    this.collection.set(vscode.Uri.file(markupPath), diagnostics);
+    this.options.collection.set(vscode.Uri.file(markupPath), diagnostics);
   }
 }

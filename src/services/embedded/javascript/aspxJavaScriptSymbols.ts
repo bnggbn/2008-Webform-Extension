@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import { EmbeddedProjectionRegion, toDocumentOffset } from './aspxEmbeddedProjection';
+import { EmbeddedProjectionRegion, toDocumentOffset } from '../../../projection/aspxEmbeddedProjection';
 import { getJavaScriptTagBodyRegions } from './aspxJavaScriptUtils';
 
 export type ProjectedJavaScriptSymbolKind = 'function' | 'variable';

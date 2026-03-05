@@ -7,4 +7,5 @@ export enum DiagnosticKind {
   UnsupportedNullConditionalAccess = 'unsupportedNullConditionalAccess',
   AspxEmbeddedJavaScriptParseError = 'aspxEmbeddedJavaScriptParseError',
   AspxEmbeddedCssParseError = 'aspxEmbeddedCssParseError',
+  AspxUnclosedServerTag = 'aspxUnclosedServerTag',
 }

@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { findProjectedJavaScriptHover } from '../projection/aspxJavaScriptHover';
+import { findProjectedJavaScriptHover } from '../services/embedded/javascript/aspxJavaScriptHover';
 import { positionAt } from '../utils/textUtils';
 
 export class EmbeddedJavaScriptHoverProvider implements vscode.HoverProvider {

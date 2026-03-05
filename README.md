@@ -13,7 +13,7 @@ Current features:
 - in-memory ASPX embedded-region projection for JS/CSS-aware analysis with stable offset mapping
 - embedded JavaScript parse diagnostics for server-tag-heavy script/attribute regions
 - embedded CSS parse diagnostics for server-tag-heavy style/attribute regions (custom hand-written CSS validator)
-- embedded JavaScript document symbols (Outline), same-file definition lookup, and hover
+- embedded JavaScript document symbols (Outline), definition lookup, references, and hover
 - debug logging for embedded language diagnostics (`webformsHelper.debug.embeddedLanguageLogs`)
 
 Current commands:
@@ -30,6 +30,8 @@ Current embedded JavaScript editor features on `.aspx` / `.ascx` / `.master` (re
 - parse diagnostics for projected JS regions that contain server tags
 - document symbols for local functions/variables in embedded script blocks
 - same-file definition lookup (`F12`) for projected symbols
+- references lookup (`Shift+F12`) for projected symbols
+- cross-file definition/references from `.aspx/.ascx/.master` into externally referenced `<script src=\"...\">` JavaScript files
 - hover for projected symbols
 
 Note:

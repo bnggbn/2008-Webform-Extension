@@ -180,6 +180,11 @@
         "webformsHelper.rules.embeddedCssParseError": {
           "type": "string",
           "default": "warning"
+        },
+        "webformsHelper.rules.unclosedAspServerTag": {
+          "type": "string",
+          "default": "warning",
+          "description": "Report unclosed ASP server tags (<% ... without %>) in embedded script/style/attributes."
         }
       }
     }

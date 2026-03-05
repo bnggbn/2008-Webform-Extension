@@ -1,4 +1,4 @@
-import { EmbeddedProjectionRegion, projectAspxEmbeddedRegions } from './aspxEmbeddedProjection';
+import { EmbeddedProjectionRegion, projectAspxEmbeddedRegions } from '../../../projection/aspxEmbeddedProjection';
 import { ProjectedJavaScriptSymbol } from './aspxJavaScriptSymbols';
 
 export function getJavaScriptTagBodyRegions(documentText: string): EmbeddedProjectionRegion[] {

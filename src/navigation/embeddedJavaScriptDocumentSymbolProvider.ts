@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { collectProjectedJavaScriptSymbols, ProjectedJavaScriptSymbol } from '../projection/aspxJavaScriptSymbols';
+import { collectProjectedJavaScriptSymbols, ProjectedJavaScriptSymbol } from '../services/embedded/javascript/aspxJavaScriptSymbols';
 import { positionAt } from '../utils/textUtils';
 
 export class EmbeddedJavaScriptDocumentSymbolProvider implements vscode.DocumentSymbolProvider {

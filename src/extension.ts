@@ -5,6 +5,7 @@ import { logOutput } from './logging/outputChannel';
 import { EmbeddedJavaScriptDefinitionProvider } from './navigation/embeddedJavaScriptDefinitionProvider';
 import { EmbeddedJavaScriptDocumentSymbolProvider } from './navigation/embeddedJavaScriptDocumentSymbolProvider';
 import { EmbeddedJavaScriptHoverProvider } from './navigation/embeddedJavaScriptHoverProvider';
+import { EmbeddedJavaScriptReferenceProvider } from './navigation/embeddedJavaScriptReferenceProvider';
 import { registerCommands } from './navigation/commands';
 import { WebFormsCodeLensProvider } from './navigation/codeLensProvider';
 import { RelatedFilesTreeProvider } from './navigation/relatedFilesTree';
@@ -60,6 +61,15 @@ export function activate(context: vscode.ExtensionContext): void {
         { pattern: '**/*.{aspx,ascx,master,ashx,asmx}' },
       ],
       new EmbeddedJavaScriptHoverProvider()
+    )
+  );
+
+  context.subscriptions.push(
+    vscode.languages.registerReferenceProvider(
+      [
+        { pattern: '**/*.{aspx,ascx,master,ashx,asmx}' },
+      ],
+      new EmbeddedJavaScriptReferenceProvider()
     )
   );
 

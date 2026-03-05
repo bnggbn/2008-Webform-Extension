@@ -18,8 +18,8 @@ Implemented in code:
 - navigation commands and CodeLens
 - structural diagnostics
 - compatibility diagnostics
-- embedded JS/CSS projection + diagnostics pipelines (with shared abstract base class)
-- embedded JavaScript symbols / same-file definition / hover
+- embedded JS/CSS projection + diagnostics pipelines (composition-based shared runner)
+- embedded JavaScript symbols / definition / references / hover
 - custom `webforms-aspx` language grammar and snippets
 - server control ID parsing (`runat="server"` elements) and designer field name enrichment
 - debug logging infrastructure for embedded language diagnostics (`debug.embeddedLanguageLogs`)
@@ -247,9 +247,10 @@ Responsibilities:
 Implementation notes:
 
 - server expression tags are replaced with `null ` (JS) or `inherit` (CSS) to maintain offset stability
-- embedded diagnostic pipelines share an abstract base class (`embeddedLanguageDiagnosticsPipelineBase.ts`) that handles document refresh lifecycle
+- embedded diagnostic pipelines share a composition-based runner (`embeddedDiagnosticsRunner.ts`) for document refresh lifecycle
 - CSS validation uses a custom hand-written parser (no external CSS parser dependency)
-- JavaScript validation and symbol extraction use `ts.transpileModule` / `ts.createSourceFile` from TypeScript
+- JavaScript diagnostics and symbol extraction use TypeScript AST/transpile APIs
+- cross-file JavaScript navigation resolves from markup files into externally referenced `<script src=\"...\">` files
 
 ## Package Structure (Current)
 
@@ -282,9 +283,10 @@ src/
   diagnostics/
     diagnosticEngine.ts
     embedded/
-      embeddedLanguageDiagnosticsPipelineBase.ts
+      embeddedDiagnosticsRunner.ts
       aspxJavaScriptDiagnosticsPipeline.ts
       aspxCssDiagnosticsPipeline.ts
+      aspxServerTagDiagnosticsPipeline.ts
       embeddedDebugLog.ts
     structural/
       structuralDiagnosticsPipeline.ts
@@ -307,13 +309,21 @@ src/
         rule.ts
   projection/
     aspxEmbeddedProjection.ts
-    aspxJavaScriptValidation.ts
-    aspxCssValidation.ts
-    aspxJavaScriptSymbols.ts
-    aspxJavaScriptDefinitions.ts
-    aspxJavaScriptHover.ts
-    aspxJavaScriptCompletion.ts
-    aspxJavaScriptUtils.ts
+    aspxServerTagValidation.ts
+  services/
+    embedded/
+      javascript/
+        aspxJavaScriptValidation.ts
+        aspxJavaScriptSymbols.ts
+        aspxJavaScriptDefinitions.ts
+        aspxJavaScriptReferences.ts
+        aspxJavaScriptHover.ts
+        aspxJavaScriptCompletion.ts
+        aspxJavaScriptUtils.ts
+        externalScriptResolver.ts
+        externalJavaScriptSearch.ts
+      css/
+        aspxCssValidation.ts
   config/
     settings.ts
     ruleConfig.ts

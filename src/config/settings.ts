@@ -27,6 +27,7 @@ export type WebFormsSettings = {
     unsupportedNullConditionalAccess: RuleLevel;
     embeddedJavaScriptParseError: RuleLevel;
     embeddedCssParseError: RuleLevel;
+    unclosedAspServerTag: RuleLevel;
   };
 };
 
@@ -62,6 +63,7 @@ export function loadSettings(): WebFormsSettings {
       unsupportedNullConditionalAccess: config.get<RuleLevel>('rules.unsupportedNullConditionalAccess', 'error'),
       embeddedJavaScriptParseError: config.get<RuleLevel>('rules.embeddedJavaScriptParseError', 'warning'),
       embeddedCssParseError: config.get<RuleLevel>('rules.embeddedCssParseError', 'warning'),
+      unclosedAspServerTag: config.get<RuleLevel>('rules.unclosedAspServerTag', 'warning'),
     },
   };
 }

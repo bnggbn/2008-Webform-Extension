@@ -1,5 +1,5 @@
 import * as ts from 'typescript';
-import { EmbeddedProjectionRegion, projectAspxEmbeddedRegions, toDocumentOffset } from './aspxEmbeddedProjection';
+import { EmbeddedProjectionRegion, projectAspxEmbeddedRegions, toDocumentOffset } from '../../../projection/aspxEmbeddedProjection';
 
 export type ProjectedJavaScriptDiagnostic = {
   start: number;

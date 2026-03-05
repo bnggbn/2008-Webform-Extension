@@ -6,22 +6,30 @@ const {
 } = require('../dist/projection/aspxEmbeddedProjection.js');
 const {
   collectProjectedJavaScriptDiagnostics,
-} = require('../dist/projection/aspxJavaScriptValidation.js');
+} = require('../dist/services/embedded/javascript/aspxJavaScriptValidation.js');
 const {
   collectProjectedCssDiagnostics,
-} = require('../dist/projection/aspxCssValidation.js');
+} = require('../dist/services/embedded/css/aspxCssValidation.js');
 const {
   collectProjectedJavaScriptSymbols,
-} = require('../dist/projection/aspxJavaScriptSymbols.js');
+} = require('../dist/services/embedded/javascript/aspxJavaScriptSymbols.js');
 const {
   findProjectedJavaScriptDefinition,
-} = require('../dist/projection/aspxJavaScriptDefinitions.js');
+  findProjectedJavaScriptDefinitionByName,
+} = require('../dist/services/embedded/javascript/aspxJavaScriptDefinitions.js');
 const {
   findProjectedJavaScriptHover,
-} = require('../dist/projection/aspxJavaScriptHover.js');
+} = require('../dist/services/embedded/javascript/aspxJavaScriptHover.js');
 const {
   collectProjectedJavaScriptCompletions,
-} = require('../dist/projection/aspxJavaScriptCompletion.js');
+} = require('../dist/services/embedded/javascript/aspxJavaScriptCompletion.js');
+const {
+  collectProjectedJavaScriptReferences,
+  collectProjectedJavaScriptReferencesByName,
+} = require('../dist/services/embedded/javascript/aspxJavaScriptReferences.js');
+const {
+  collectProjectedAspxServerTagDiagnostics,
+} = require('../dist/projection/aspxServerTagValidation.js');
 
 test('projects script and style regions with ASP.NET tags masked in memory', () => {
   const documentText = [
@@ -226,6 +234,108 @@ test('finds same-file projected JavaScript function definitions', () => {
   assert.equal(topLevelDefinition.name, 'supermarketControl');
 });
 
+test('finds same-file projected JavaScript variable definitions', () => {
+  const documentText = [
+    '<script>',
+    'function supermarketControl() {',
+    '  var state = 1;',
+    '  return state;',
+    '}',
+    '</script>',
+  ].join('\n');
+
+  const usageOffset = documentText.lastIndexOf('state;') + 2;
+  const variableDefinition = findProjectedJavaScriptDefinition(documentText, usageOffset);
+  assert.ok(variableDefinition);
+  assert.equal(variableDefinition.name, 'state');
+  assert.equal(documentText.slice(variableDefinition.targetStart, variableDefinition.targetEnd), 'state');
+});
+
+test('finds same-file projected JavaScript parameter definitions', () => {
+  const documentText = [
+    '<script>',
+    'function supermarketControl(state) {',
+    '  return state + 1;',
+    '}',
+    '</script>',
+  ].join('\n');
+
+  const usageOffset = documentText.indexOf('state + 1') + 2;
+  const parameterDefinition = findProjectedJavaScriptDefinition(documentText, usageOffset);
+  assert.ok(parameterDefinition);
+  assert.equal(parameterDefinition.name, 'state');
+  assert.equal(documentText.slice(parameterDefinition.targetStart, parameterDefinition.targetEnd), 'state');
+});
+
+test('finds projected JavaScript definitions by name for cross-file lookup helper', () => {
+  const documentText = [
+    '<script>',
+    'function sharedHelper() {',
+    '  return 1;',
+    '}',
+    '</script>',
+  ].join('\n');
+
+  const definition = findProjectedJavaScriptDefinitionByName(documentText, 'sharedHelper');
+  assert.ok(definition);
+  assert.equal(definition.name, 'sharedHelper');
+  assert.equal(documentText.slice(definition.targetStart, definition.targetEnd), 'sharedHelper');
+});
+
+test('collects same-file projected JavaScript function references', () => {
+  const documentText = [
+    '<script>',
+    'function supermarketControl() {',
+    '  return 1;',
+    '}',
+    'supermarketControl();',
+    '</script>',
+  ].join('\n');
+
+  const queryOffset = documentText.indexOf('supermarketControl();') + 2;
+  const references = collectProjectedJavaScriptReferences(documentText, queryOffset);
+  assert.equal(references.length >= 2, true);
+  assert.equal(
+    references.some(reference => documentText.slice(reference.start, reference.end) === 'supermarketControl'),
+    true
+  );
+});
+
+test('collects same-file projected JavaScript variable references', () => {
+  const documentText = [
+    '<script>',
+    'function x() {',
+    '  var state = 1;',
+    '  return state + state;',
+    '}',
+    '</script>',
+  ].join('\n');
+
+  const queryOffset = documentText.indexOf('state +') + 2;
+  const references = collectProjectedJavaScriptReferences(documentText, queryOffset);
+  assert.equal(references.length >= 3, true);
+  assert.equal(
+    references.every(reference => documentText.slice(reference.start, reference.end) === 'state'),
+    true
+  );
+});
+
+test('collects projected JavaScript references by name for cross-file lookup helper', () => {
+  const documentText = [
+    '<script>',
+    'function sharedHelper() {}',
+    'sharedHelper();',
+    '</script>',
+  ].join('\n');
+
+  const references = collectProjectedJavaScriptReferencesByName(documentText, 'sharedHelper');
+  assert.equal(references.length >= 2, true);
+  assert.equal(
+    references.every(reference => documentText.slice(reference.start, reference.end) === 'sharedHelper'),
+    true
+  );
+});
+
 test('finds hover information for projected JavaScript symbols', () => {
   const documentText = [
     '<script>',
@@ -265,4 +375,94 @@ test('collects local JavaScript completions from projected script regions', () =
   assert.equal(completions.some(item => item.name === 'supermarketControl' && item.kind === 'function'), true);
   assert.equal(completions.some(item => item.name === 'state' && item.kind === 'variable'), true);
   assert.equal(completions.some(item => item.name === 'nestedHelper' && item.kind === 'function'), true);
+});
+
+test('handles mixed inline and multiline ASP blocks inside script without leaking tokens', () => {
+  const documentText = [
+    '<script>',
+    'var id = "<%=ExtendJavascriptContent%>";',
+    'var cid = "<% =transEsstType.ClientID%>";',
+    '<%//comment',
+    ' if (!isMask() ){  %>',
+    'var target = "<%=SendNameTxt.ClientID%>";',
+    '<% }else{   // fallback',
+    '              %>',
+    'var z = 1;',
+    '<%} %>',
+    '</script>',
+  ].join('\n');
+
+  const regions = projectAspxEmbeddedRegions(documentText);
+  assert.equal(regions.length, 1);
+  assert.equal(regions[0].language, 'javascript');
+  assert.equal(regions[0].source, 'tag-body');
+  assert.equal(regions[0].hasServerTags, true);
+  assert.equal(regions[0].projectedText.includes('<%'), false);
+  assert.equal(regions[0].projectedText.includes('%>'), false);
+  assert.match(regions[0].projectedText, /var id = "null\s*";/);
+  assert.match(regions[0].projectedText, /var cid = "null\s*";/);
+  assert.match(regions[0].projectedText, /var target = "null\s*";/);
+
+  const diagnostics = collectProjectedJavaScriptDiagnostics(documentText);
+  assert.deepEqual(diagnostics, []);
+});
+
+test('projects same-line body style and onkeydown attributes with ASP and keeps diagnostics stable', () => {
+  const documentText = [
+    '<body style="background-color:<%=GetColor()%>;padding:0px;" onkeydown="ttclose(event);<%=GetKeyHook()%>">',
+    '<span style="display:none"></span>',
+    '</body>',
+  ].join('\n');
+
+  const regions = projectAspxEmbeddedRegions(documentText);
+  const styleRegion = regions.find(region => region.attributeName === 'style');
+  const keydownRegion = regions.find(region => region.attributeName === 'onkeydown');
+
+  assert.ok(styleRegion);
+  assert.equal(styleRegion.language, 'css');
+  assert.equal(styleRegion.projectedText.includes('<%'), false);
+  assert.equal(styleRegion.projectedText.includes('%>'), false);
+  assert.match(styleRegion.projectedText, /background-color:\s*inherit\s*;/);
+
+  assert.ok(keydownRegion);
+  assert.equal(keydownRegion.language, 'javascript');
+  assert.equal(keydownRegion.projectedText.includes('<%'), false);
+  assert.equal(keydownRegion.projectedText.includes('%>'), false);
+  assert.match(keydownRegion.projectedText, /ttclose\(event\);\s*null/);
+
+  const jsDiagnostics = collectProjectedJavaScriptDiagnostics(documentText);
+  const cssDiagnostics = collectProjectedCssDiagnostics(documentText);
+  assert.deepEqual(jsDiagnostics, []);
+  assert.deepEqual(cssDiagnostics, []);
+});
+
+test('reports unclosed ASP server tags in embedded regions', () => {
+  const documentText = [
+    '<script>',
+    'var x = "<%=GetValue()";',
+    '</script>',
+    '<style>',
+    '.box { color: <%--broken comment; }',
+    '</style>',
+  ].join('\n');
+
+  const diagnostics = collectProjectedAspxServerTagDiagnostics(documentText);
+  assert.equal(diagnostics.length, 2);
+  assert.match(diagnostics[0].message, /'%>' expected/);
+  assert.match(diagnostics[1].message, /'--%>' expected/);
+});
+
+test('does not report ASP server tag diagnostics when tags are balanced', () => {
+  const documentText = [
+    '<script>',
+    'var x = "<%=GetValue()%>";',
+    '<% if (ok) { %>',
+    'run();',
+    '<% } %>',
+    '</script>',
+    '<div style="color:<%=GetColor()%>;" onclick="go(\'<%=GetId()%>\');"></div>',
+  ].join('\n');
+
+  const diagnostics = collectProjectedAspxServerTagDiagnostics(documentText);
+  assert.deepEqual(diagnostics, []);
 });

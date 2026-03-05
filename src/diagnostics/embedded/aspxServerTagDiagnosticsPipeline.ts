@@ -2,24 +2,23 @@ import * as vscode from 'vscode';
 import { WebFormsSettings } from '../../config/settings';
 import { DiagnosticKind } from '../../models/diagnosticKinds';
 import { projectAspxEmbeddedRegions } from '../../projection/aspxEmbeddedProjection';
+import { collectProjectedAspxServerTagDiagnostics } from '../../projection/aspxServerTagValidation';
 import { WorkspaceScanner } from '../../scanner/workspaceScanner';
-import { collectProjectedCssDiagnostics } from '../../services/embedded/css/aspxCssValidation';
 import { EmbeddedDiagnosticsRunner } from './embeddedDiagnosticsRunner';
 
-export class AspxCssDiagnosticsPipeline {
+export class AspxServerTagDiagnosticsPipeline {
   private readonly runner: EmbeddedDiagnosticsRunner;
 
   constructor(settings: WebFormsSettings, scanner: WorkspaceScanner, collection: vscode.DiagnosticCollection) {
     this.runner = new EmbeddedDiagnosticsRunner({
       collection,
       scanner,
-      logPrefix: 'Embedded CSS',
-      diagnosticKind: DiagnosticKind.AspxEmbeddedCssParseError,
-      getRuleSettingValue: () => settings.rules.embeddedCssParseError,
+      logPrefix: 'Embedded ASP tag',
+      diagnosticKind: DiagnosticKind.AspxUnclosedServerTag,
+      getRuleSettingValue: () => settings.rules.unclosedAspServerTag,
       isDiagnosticsEnabled: () => settings.enableDiagnostics,
-      getProjectedRegions: text => projectAspxEmbeddedRegions(text)
-        .filter(region => region.language === 'css' && region.hasServerTags),
-      collectDiagnostics: text => collectProjectedCssDiagnostics(text),
+      getProjectedRegions: text => projectAspxEmbeddedRegions(text),
+      collectDiagnostics: text => collectProjectedAspxServerTagDiagnostics(text),
     });
   }
 

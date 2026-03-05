@@ -1,4 +1,4 @@
-import { EmbeddedProjectionRegion, projectAspxEmbeddedRegions, toDocumentOffset } from './aspxEmbeddedProjection';
+import { EmbeddedProjectionRegion, projectAspxEmbeddedRegions, toDocumentOffset } from '../../../projection/aspxEmbeddedProjection';
 
 export type ProjectedCssDiagnostic = {
   start: number;

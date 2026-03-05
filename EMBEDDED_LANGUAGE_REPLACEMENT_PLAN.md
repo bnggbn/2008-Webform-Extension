@@ -204,8 +204,10 @@ This phase only starts if earlier phases already provide clear maintenance value
 Current note:
 
 - hover is enabled and registered for `webforms-aspx` markup files
-- local completion exists in code (`embeddedJavaScriptCompletionProvider.ts` + `aspxJavaScriptCompletion.ts`) but is intentionally not registered — the import is not present in `extension.ts` because auto-popup behavior is too noisy for maintenance use
-- embedded diagnostic pipelines share an abstract base class (`embeddedLanguageDiagnosticsPipelineBase.ts`) for document refresh lifecycle
+- local completion exists in code (`embeddedJavaScriptCompletionProvider.ts` + `aspxJavaScriptCompletion.ts`) but is intentionally not registered - the import is not present in `extension.ts` because auto-popup behavior is too noisy for maintenance use
+- references are enabled and registered for `webforms-aspx` markup files
+- cross-file JS navigation/references currently resolve from markup into externally referenced `<script src="...">` files
+- embedded diagnostic pipelines share a composition-based runner (`embeddedDiagnosticsRunner.ts`) for document refresh lifecycle
 - CSS validation uses a custom hand-written parser (no external CSS parser dependency)
 
 ## Explicit Non-Goals For Now
@@ -213,7 +215,7 @@ Current note:
 - removing built-in JS/CSS diagnostics through unsupported APIs
 - full VS2008 WebForms designer parity
 - full React/Vue-style language service completeness
-- cross-file JavaScript intelligence
+- cross-file JavaScript intelligence beyond externally referenced `<script src="...">` files
 - embedded refactor/rename
 
 ## Decision Rules
@@ -252,4 +254,7 @@ Use these rules before adding new work:
 - Updated architecture doc to match actual codebase: fixed package structure tree, added missing pipeline files, updated `WebFormEntry` type, added embedded rule settings to config example.
 - Clarified Phase 5 status: hover registered, completion code exists but import not present in `extension.ts`.
 - Documented that CSS validation is a custom hand-written parser, not based on an external library.
-- Documented shared abstract base class for embedded diagnostic pipelines.
+- Replaced embedded diagnostic base class with a composition-based runner shared by JS/CSS/ASP-tag pipelines.
+- Enabled embedded JavaScript references (`Shift+F12`) for same-file projected symbols.
+- Added cross-file embedded JS navigation/references from markup files into externally referenced script files.
+- Moved JS/CSS embedded language logic to `services/embedded/*` and reduced `projection/` to projection-focused files.

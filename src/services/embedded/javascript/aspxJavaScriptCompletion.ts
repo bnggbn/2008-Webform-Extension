@@ -28,7 +28,6 @@ export function collectProjectedJavaScriptCompletions(
   return dedupeByName(completions);
 }
 
-
 function dedupeByName(items: ProjectedJavaScriptCompletion[]): ProjectedJavaScriptCompletion[] {
   const seen = new Set<string>();
   const deduped: ProjectedJavaScriptCompletion[] = [];

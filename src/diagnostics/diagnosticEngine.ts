@@ -4,6 +4,7 @@ import { WorkspaceScanner } from '../scanner/workspaceScanner';
 import { CompatibilityDiagnosticsPipeline } from './compatibility/compatibilityDiagnosticsPipeline';
 import { AspxCssDiagnosticsPipeline } from './embedded/aspxCssDiagnosticsPipeline';
 import { AspxJavaScriptDiagnosticsPipeline } from './embedded/aspxJavaScriptDiagnosticsPipeline';
+import { AspxServerTagDiagnosticsPipeline } from './embedded/aspxServerTagDiagnosticsPipeline';
 import { StructuralDiagnosticsPipeline } from './structural/structuralDiagnosticsPipeline';
 import { isRelevantCodeFile } from '../utils/pathUtils';
 
@@ -12,10 +13,12 @@ export class DiagnosticEngine implements vscode.Disposable {
   private readonly compatibilityCollection = vscode.languages.createDiagnosticCollection('webformsHelper-compatibility');
   private readonly embeddedJavaScriptCollection = vscode.languages.createDiagnosticCollection('webformsHelper-embedded-javascript');
   private readonly embeddedCssCollection = vscode.languages.createDiagnosticCollection('webformsHelper-embedded-css');
+  private readonly embeddedAspServerTagCollection = vscode.languages.createDiagnosticCollection('webformsHelper-embedded-asp');
   private readonly structuralPipeline: StructuralDiagnosticsPipeline;
   private readonly compatibilityPipeline: CompatibilityDiagnosticsPipeline;
   private readonly embeddedJavaScriptPipeline: AspxJavaScriptDiagnosticsPipeline;
   private readonly embeddedCssPipeline: AspxCssDiagnosticsPipeline;
+  private readonly embeddedAspServerTagPipeline: AspxServerTagDiagnosticsPipeline;
 
   constructor(
     private readonly settings: WebFormsSettings,
@@ -41,6 +44,11 @@ export class DiagnosticEngine implements vscode.Disposable {
       this.scanner,
       this.embeddedCssCollection
     );
+    this.embeddedAspServerTagPipeline = new AspxServerTagDiagnosticsPipeline(
+      this.settings,
+      this.scanner,
+      this.embeddedAspServerTagCollection
+    );
   }
 
   dispose(): void {
@@ -48,6 +56,7 @@ export class DiagnosticEngine implements vscode.Disposable {
     this.compatibilityCollection.dispose();
     this.embeddedJavaScriptCollection.dispose();
     this.embeddedCssCollection.dispose();
+    this.embeddedAspServerTagCollection.dispose();
   }
 
   refreshAll(): void {
@@ -74,6 +83,7 @@ export class DiagnosticEngine implements vscode.Disposable {
     this.compatibilityPipeline.refreshAll();
     this.embeddedJavaScriptPipeline.refreshAll();
     this.embeddedCssPipeline.refreshAll();
+    this.embeddedAspServerTagPipeline.refreshAll();
   }
 
   // Incremental refresh keeps the two pipelines independent:
@@ -90,6 +100,7 @@ export class DiagnosticEngine implements vscode.Disposable {
     this.compatibilityPipeline.refreshFile(filePath);
     this.embeddedJavaScriptPipeline.refreshPaths(impactedPaths);
     this.embeddedCssPipeline.refreshPaths(impactedPaths);
+    this.embeddedAspServerTagPipeline.refreshPaths(impactedPaths);
   }
 
   // Remove handling clears stale diagnostics first, then rebuilds any surviving
@@ -105,6 +116,7 @@ export class DiagnosticEngine implements vscode.Disposable {
     this.structuralPipeline.refreshPaths(stalePaths);
     this.embeddedJavaScriptPipeline.refreshPaths(stalePaths);
     this.embeddedCssPipeline.refreshPaths(stalePaths);
+    this.embeddedAspServerTagPipeline.refreshPaths(stalePaths);
     if (isRelevantCodeFile(filePath)) {
       this.compatibilityPipeline.deleteFile(filePath);
     }
@@ -115,6 +127,7 @@ export class DiagnosticEngine implements vscode.Disposable {
     this.compatibilityCollection.clear();
     this.embeddedJavaScriptCollection.clear();
     this.embeddedCssCollection.clear();
+    this.embeddedAspServerTagCollection.clear();
   }
 
   private clearFile(filePath: string): void {
@@ -123,6 +136,7 @@ export class DiagnosticEngine implements vscode.Disposable {
     this.compatibilityCollection.delete(uri);
     this.embeddedJavaScriptCollection.delete(uri);
     this.embeddedCssCollection.delete(uri);
+    this.embeddedAspServerTagCollection.delete(uri);
   }
 
   private clearPaths(paths: string[]): void {

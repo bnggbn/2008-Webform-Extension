@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { collectProjectedJavaScriptCompletions } from '../projection/aspxJavaScriptCompletion';
+import { collectProjectedJavaScriptCompletions } from '../services/embedded/javascript/aspxJavaScriptCompletion';
 
 export class EmbeddedJavaScriptCompletionProvider implements vscode.CompletionItemProvider {
   provideCompletionItems(
