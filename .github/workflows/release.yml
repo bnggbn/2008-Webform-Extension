@@ -1,0 +1,83 @@
+﻿name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.2.0
+        with:
+          node-version: "20.17.0"
+          cache: npm
+
+      - name: Ensure tag commit is on main
+        shell: bash
+        run: |
+          git fetch origin main --depth=1
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/main"; then
+            echo "Tag commit is not on main. Release is main-only."
+            exit 1
+          fi
+
+      - name: Ensure tag matches package version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$TAG" != "v$PKG_VERSION" ]]; then
+            echo "Tag ($TAG) must match package.json version (v$PKG_VERSION)."
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test
+        run: npm test
+
+      - name: Package VSIX
+        run: npx @vscode/vsce package --out extension.vsix
+
+      - name: Publish to VS Code Marketplace
+        if: ${{ secrets.VSCE_PAT != '' }}
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npx @vscode/vsce publish --packagePath extension.vsix --pat "$VSCE_PAT"
+
+      - name: Skip Marketplace publish (no VSCE_PAT)
+        if: ${{ secrets.VSCE_PAT == '' }}
+        run: echo "VSCE_PAT is not set. Skip publishing to VS Code Marketplace."
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2.2.1
+        with:
+          tag_name: ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ### Download
+            Download the `.vsix` file from the assets section below.
+
+            ### Install
+            1. Open VS Code.
+            2. `Ctrl/Cmd + Shift + P`
+            3. Run `Extensions: Install from VSIX...`
+            4. Select the downloaded `.vsix` file.
+          files: extension.vsix
